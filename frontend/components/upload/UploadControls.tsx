@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Loader2, Sparkles, X, AlertCircle } from 'lucide-react';
+import { FileText, Loader2, Sparkles, X } from 'lucide-react';
 
 interface UploadControlsProps {
     file: File | null;
@@ -33,7 +33,7 @@ export default function UploadControls({ file, isAnalyzing, onAnalyze, onClear }
                         {(file.size / 1024 / 1024).toFixed(2)} MB • PDF Document
                     </p>
                 </div>
-                
+
                 {/* Only show Clear button if NOT analyzing */}
                 {onClear && !isAnalyzing && (
                     <button
@@ -54,10 +54,10 @@ export default function UploadControls({ file, isAnalyzing, onAnalyze, onClear }
                             className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
                             initial={{ width: "0%" }}
                             animate={{ width: "100%" }}
-                            transition={{ 
-                                duration: 2, 
-                                repeat: Infinity, 
-                                ease: "linear" 
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "linear"
                             }}
                         />
                     </div>

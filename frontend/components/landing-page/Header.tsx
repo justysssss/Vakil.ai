@@ -121,6 +121,7 @@ export default function Header() {
                                             src={session.user.image}
                                             alt={session.user.name || 'User'}
                                             className="w-8 h-8 rounded-full border border-white/20"
+                                        // eslint-disable-next-line @next/next/no-img-element
                                         />
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -220,6 +221,7 @@ export default function Header() {
                                                 src={session.user.image}
                                                 alt={session.user.name || 'User'}
                                                 className="w-10 h-10 rounded-full border border-white/20"
+                                            // eslint-disable-next-line @next/next/no-img-element
                                             />
                                         ) : (
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">

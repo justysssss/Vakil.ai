@@ -158,13 +158,7 @@ const IconGitHub = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-// Stripe
-const IconStripe = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg {...props} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="20" height="20" rx="4" fill="#635BFF" />
-        <path d="M12 7C9.5 7 8 8 8 9.5C8 12 13 11.5 13 13C13 13.5 12.5 14 11 14C9.5 14 8.5 13.5 8 13M12 7V5M12 17V14M12 7C14 7 16 8 16 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-);
+
 
 // Define the icons with their unique positions
 const demoIcons: FloatingIconsHeroProps['icons'] = [
