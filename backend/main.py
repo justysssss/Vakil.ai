@@ -13,7 +13,7 @@ from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "../frontend/.env"))
 
 app = FastAPI()
 
@@ -30,6 +30,36 @@ vectorstore = Chroma(persist_directory="./chroma_db/", embedding_function=embedd
 retriver = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 llm = ChatGroq(temperature=0, model="llama-3.1-8b-instant")
+
+class ChatRequest(BaseModel):
+    question: str
+    history: list = []
+    document_context: str
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    try:
+        messages = [
+            ("system", "You are VakilAI, a highly experienced and professional Indian legal counsel. Your tone should be authoritative, precise, and formal, yet clear. Explain legal concepts thoroughly but concisely."),
+            ("system", "IMPORTANT: Do NOT use markdown formatting like bold (**text**) or italics (*text*) in your response. Output plain text only."),
+        ]
+        
+        # Add context from the document
+        messages.append(("system", f"Document Context:\n{request.document_context}"))
+        
+        # Add chat history
+        for msg in request.history:
+            role = "human" if msg["role"] == "user" else "assistant"
+            messages.append((role, msg["content"]))
+            
+        # Add current question
+        messages.append(("human", request.question))
+        
+        response = llm.invoke(messages)
+        return {"answer": response.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 PROMPT_TEMPLATE = """
 You are an expert Indian Legal Advisor.
 Analyze the following Non-Disclosure Agreement (NDA) clause based ONLY on the provided Indian Law Context.
@@ -56,7 +86,7 @@ Return the output in purely JSON format with this structure:
   ],
   "score": "This the overall rating of the document out of 100, higher means good lower means bad"
 }}
-MPORTANT: Return ONLY the raw JSON. Do not use Markdown formatting (no ```json or ```). Do not add any conversational text before or after the JSON.
+IMPORTANT: Return ONLY the raw JSON. Do not use Markdown formatting (no ```json or ```). Do not add any conversational text before or after the JSON.
 """
 
 @app.post("/analyze")
@@ -87,7 +117,7 @@ async def analyze_document(file: UploadFile = File(...)):
 
         try:
             analysis_data = json.loads(clean_json_str)
-
+            analysis_data["full_text"] = full_text
             return analysis_data
         except json.JSONDecodeError:
             return {"error": "Failed to parse analysis", "raw_content": clean_json_str}
