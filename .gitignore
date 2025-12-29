@@ -6,3 +6,31 @@ node_modules
 
 #vscode
 .vscode
+
+# --- Python & Backend ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+*.log
+
+# --- Vector DB (Don't push the brain, let the server rebuild it) ---
+chroma_db/
+chroma.sqlite3
+
+# --- Node.js & Frontend ---
+node_modules/
+.next/
+build/
+dist/
+.npm
+*.local
+
+# --- IDE & OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
