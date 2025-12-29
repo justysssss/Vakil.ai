@@ -90,7 +90,7 @@ export default function UploadControls({ file, onAnalyze, onClear }: UploadContr
                     onClick={startAnalyze}
                     disabled={!file || uploading}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl 
-                             bg-gradient-to-r from-violet-500 to-purple-600 
+                             bg-linear-to-r from-violet-500 to-purple-600 
                              hover:from-violet-600 hover:to-purple-700
                              text-white font-semibold
                              disabled:opacity-50 disabled:cursor-not-allowed

@@ -2,7 +2,6 @@ import Header from "@/components/landing-page/Header";
 import HeroSection from "@/components/landing-page/HeroSection";
 import FeaturesSection from "@/components/landing-page/FeaturesSection";
 import HowItWorksSection from "@/components/landing-page/HowItWorksSection";
-import TestimonialsSection from "@/components/landing-page/TestimonialsSection";
 import PricingSection from "@/components/landing-page/PricingSection";
 import CTASection from "@/components/landing-page/CTASection";
 import Footer from "@/components/landing-page/Footer";
@@ -19,7 +18,6 @@ export default function Home() {
         <section id="how-it-works">
           <HowItWorksSection />
         </section>
-        <TestimonialsSection />
         <section id="pricing">
           <PricingSection />
         </section>
