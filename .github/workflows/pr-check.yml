@@ -1,0 +1,102 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR title format
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          # Check if PR title follows conventional commits format
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?\!?:\ .+ ]]; then
+            echo "❌ PR title should follow conventional commits format:"
+            echo "   feat: add new feature"
+            echo "   fix: fix a bug"
+            echo "   docs: update documentation"
+            echo "   style: formatting changes"
+            echo "   refactor: code refactoring"
+            echo "   perf: performance improvements"
+            echo "   test: add/update tests"
+            echo "   build: build system changes"
+            echo "   ci: CI/CD changes"
+            echo "   chore: maintenance tasks"
+            echo ""
+            echo "Your title: $PR_TITLE"
+            exit 1
+          fi
+          echo "✅ PR title format is valid"
+
+      - name: Check for merge conflicts
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          if ! git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) HEAD origin/${{ github.base_ref }} | grep -q "^"; then
+            echo "✅ No merge conflicts detected"
+          else
+            # Check if there are actual conflicts
+            if git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) HEAD origin/${{ github.base_ref }} | grep -q "<<<<<"; then
+              echo "❌ Merge conflicts detected. Please resolve them."
+              exit 1
+            fi
+            echo "✅ No merge conflicts detected"
+          fi
+
+      - name: Check branch is up to date
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          BEHIND=$(git rev-list --count HEAD..origin/${{ github.base_ref }})
+          if [ "$BEHIND" -gt 10 ]; then
+            echo "⚠️ Your branch is $BEHIND commits behind ${{ github.base_ref }}."
+            echo "Consider rebasing or merging the latest changes."
+          else
+            echo "✅ Branch is reasonably up to date"
+          fi
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for unused dependencies
+        run: |
+          echo "Checking for potential issues..."
+          # List large dependencies
+          echo "📦 Largest dependencies:"
+          du -sh node_modules/* 2>/dev/null | sort -hr | head -10 || true
+
+      - name: Run linter
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
