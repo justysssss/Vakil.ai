@@ -91,7 +91,7 @@ const Icon = ({
     >
       {/* Inner wrapper for the continuous floating animation */}
       <motion.div
-        className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 p-3 rounded-3xl shadow-xl bg-card/80 backdrop-blur-md border border-border/10"
+        className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 p-3 rounded-2xl shadow-xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-colors"
         animate={{
           y: [0, -8, 0, 8, 0],
           x: [0, 6, 0, -6, 0],
@@ -104,7 +104,7 @@ const Icon = ({
           ease: 'easeInOut',
         }}
       >
-        <iconData.icon className="w-8 h-8 md:w-10 md:h-10 text-foreground" />
+        <iconData.icon className="w-7 h-7 md:w-8 md:h-8 text-foreground" />
       </motion.div>
     </motion.div>
   );
@@ -123,16 +123,25 @@ const FloatingIconsHero = React.forwardRef<
     mouseY.current = event.clientY;
   };
 
+  // Split subtitle to highlight "Legal AI Auditor"
+  const subtitleParts = subtitle.split('—');
+
   return (
     <section
       ref={ref}
       onMouseMove={handleMouseMove}
       className={cn(
-        'relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-background',
+        'relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#0a0a0a]',
         className
       )}
       {...props}
     >
+      {/* Background gradient effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[120px]" />
+      </div>
+
       {/* Container for the background floating icons */}
       <div className="absolute inset-0 w-full h-full">
         {icons.map((iconData, index) => (
@@ -147,18 +156,87 @@ const FloatingIconsHero = React.forwardRef<
       </div>
 
       {/* Container for the foreground content */}
-      <div className="relative z-10 text-center px-4">
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-linear-to-b from-foreground to-foreground/70 text-transparent bg-clip-text">
+      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm">
+            ✨ AI-Powered Contract Analysis
+          </span>
+        </motion.div>
+
+        {/* Main title */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white mb-4"
+        >
           {title}
-        </h1>
-        <p className="mt-6 max-w-xl mx-auto text-lg text-muted-foreground">
-          {subtitle}
-        </p>
-        <div className="mt-10">
-          <Button asChild size="lg" variant="default" className="px-8 py-3 text-base font-semibold bg-white/6 text-white hover:bg-white/10">
+        </motion.h1>
+
+        {/* Subtitle with gradient */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-2xl md:text-3xl font-semibold bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-6"
+        >
+          Legal AI Auditor
+        </motion.p>
+
+        {/* Description */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-4 max-w-2xl mx-auto text-lg text-white/60 leading-relaxed"
+        >
+          {subtitleParts.length > 1 ? subtitleParts[1] : subtitle}
+        </motion.p>
+
+        {/* CTA Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+        >
+          <Button
+            asChild
+            size="lg"
+            variant="default"
+            className="px-8 py-4 text-base font-semibold bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25 rounded-xl"
+          >
             <a href={ctaHref}>{ctaText}</a>
           </Button>
-        </div>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="px-8 py-4 text-base font-semibold bg-white/5 border-white/20 text-white hover:bg-white/10 rounded-xl"
+          >
+            <a href="#features">Learn More</a>
+          </Button>
+        </motion.div>
+
+        {/* Trust indicators */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="mt-16 flex flex-wrap items-center justify-center gap-6 text-white/40 text-sm"
+        >
+          <span>Trusted by 500+ businesses</span>
+          <span className="hidden sm:inline">•</span>
+          <span>₹2Cr+ risks identified</span>
+          <span className="hidden sm:inline">•</span>
+          <span>MSME Compliant</span>
+        </motion.div>
       </div>
     </section>
   );
