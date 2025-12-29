@@ -7,28 +7,49 @@ import UploadControls from '@/components/upload/UploadControls';
 import PdfViewer from '@/components/pdf/PdfViewer';
 import UploadSidebar from '@/components/upload/Sidebar';
 import ChatSidebar from '@/components/upload/ChatSidebar';
-import { ArrowLeft, Scale, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Scale, AlertTriangle, CheckCircle, FileText, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
+import { useSession, signOut } from '@/lib/auth-client';
 
 // Define types for the Backend Response
 interface Risk {
-  clause: string;
-  risk_level: "High" | "Medium" | "Low";
-  reason: string;
-  suggestion: string;
+    clause: string;
+    risk_level: "High" | "Medium" | "Low";
+    reason: string;
+    suggestion: string;
 }
 
 interface AnalysisResult {
-  summary: string;
-  risks: Risk[];
-  score: number;
-  full_text: string; // Crucial for Chat
+    summary: string;
+    risks: Risk[];
+    score: number;
+    full_text: string; // Crucial for Chat
 }
 
 export default function UploadPage() {
+    const { data: session, isPending } = useSession();
     const [file, setFile] = React.useState<File | null>(null);
     const [isAnalyzing, setIsAnalyzing] = React.useState(false);
     const [analysisData, setAnalysisData] = React.useState<AnalysisResult | null>(null);
+    const [showUserMenu, setShowUserMenu] = React.useState(false);
+    const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        if (showUserMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showUserMenu]);
 
     // 1. The Function to Call Backend
     const handleAnalyze = async () => {
@@ -48,6 +69,7 @@ export default function UploadPage() {
             if (!response.ok) throw new Error("Analysis failed");
 
             const data = await response.json();
+            console.log("Analysis Response Data:", data); // Debug log
             setAnalysisData(data);
         } catch (error) {
             console.error(error);
@@ -62,6 +84,11 @@ export default function UploadPage() {
         setAnalysisData(null);
     };
 
+    const handleLogout = async () => {
+        await signOut();
+        window.location.href = '/';
+    };
+
     return (
         <div className="min-h-screen bg-[#0a0a0a] overflow-x-hidden">
             {/* Background gradient */}
@@ -71,8 +98,8 @@ export default function UploadPage() {
             </div>
 
             {/* Header */}
-            <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <header className="relative z-50 border-b border-white/10 bg-white/5 backdrop-blur-xl">
+                <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
                             <ArrowLeft className="w-4 h-4" />
@@ -84,21 +111,81 @@ export default function UploadPage() {
                             <span className="font-semibold text-white">VakilVerify</span>
                         </div>
                     </div>
-                    {/* Show Score if available */}
-                    {analysisData && (
-                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10">
-                            <span className="text-sm text-white/60">Safety Score:</span>
-                            <span className={`font-bold ${analysisData.score > 70 ? 'text-green-400' : 'text-red-400'}`}>
-                                {analysisData.score}/100
-                            </span>
-                        </div>
-                    )}
+
+                    <div className="flex items-center gap-4">
+                        {/* Show Score if available */}
+                        {analysisData && (
+                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10">
+                                <span className="text-sm text-white/60">Safety Score:</span>
+                                <span className={`font-bold ${analysisData.score > 70 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {analysisData.score}/100
+                                </span>
+                            </div>
+                        )}
+
+                        {/* User Session */}
+                        {isPending ? (
+                            <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                        ) : session?.user ? (
+                            <div ref={userMenuRef} className="relative">
+                                <button
+                                    onClick={() => setShowUserMenu(!showUserMenu)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                                >
+                                    {session.user.image ? (
+                                        <img
+                                            src={session.user.image}
+                                            alt={session.user.name || 'User'}
+                                            className="w-8 h-8 rounded-full border border-white/20"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium">
+                                                {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <span className="text-sm text-white/80 hidden sm:block">
+                                        {session.user.name || session.user.email?.split('@')[0]}
+                                    </span>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {showUserMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1a1a1a] border border-white/10 shadow-xl overflow-hidden z-[100]">
+                                        <div className="px-4 py-3 border-b border-white/10">
+                                            <p className="text-sm font-medium text-white truncate">
+                                                {session.user.name}
+                                            </p>
+                                            <p className="text-xs text-white/50 truncate">
+                                                {session.user.email}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sign out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Link
+                                href="/"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-700 transition-all"
+                            >
+                                Sign In
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </header>
 
             {/* Main content */}
-            <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-                
+            <main className="relative z-10 max-w-[1600px] mx-auto px-6 py-8">
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Left Sidebar: Switches between Tips and Analysis Results */}
                     <div className="lg:col-span-3 h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
@@ -106,7 +193,7 @@ export default function UploadPage() {
                             {!analysisData ? (
                                 <UploadSidebar key="sidebar" />
                             ) : (
-                                <motion.div 
+                                <motion.div
                                     key="results"
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
@@ -116,9 +203,9 @@ export default function UploadPage() {
                                         <h3 className="text-lg font-semibold text-white mb-2">Analysis Summary</h3>
                                         <p className="text-sm text-white/70 leading-relaxed">{analysisData.summary}</p>
                                     </div>
-                                    
+
                                     <h4 className="text-sm font-medium text-white/50 uppercase tracking-wider mt-6 mb-3">Risks Found</h4>
-                                    
+
                                     {analysisData.risks.map((risk, idx) => (
                                         <div key={idx} className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors">
                                             <div className="flex items-start gap-3">
@@ -137,7 +224,7 @@ export default function UploadPage() {
                     </div>
 
                     {/* Main content area */}
-                    <div className="lg:col-span-5 space-y-6">
+                    <div className={`${analysisData ? 'lg:col-span-5' : 'lg:col-span-9'} space-y-6 transition-all duration-500`}>
                         {!file ? (
                             <Dropzone
                                 onFileSelect={setFile}
@@ -148,26 +235,27 @@ export default function UploadPage() {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                 <UploadControls
                                     file={file}
-                                    isAnalyzing={isAnalyzing} // Pass loading state
-                                    onAnalyze={handleAnalyze} // Pass function
+                                    isAnalyzing={isAnalyzing}
+                                    onAnalyze={handleAnalyze}
                                     onClear={handleClear}
                                 />
-                                <div className="mt-4 h-[600px] rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                                     <PdfViewer file={file} />
+                                <div className={`mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-violet-500/10 transition-all duration-500 ${analysisData ? 'h-[750px]' : 'h-[600px]'}`}>
+                                    <PdfViewer file={file} risks={analysisData?.risks} />
                                 </div>
                             </motion.div>
                         )}
                     </div>
 
-                    {/* Right sidebar - Chat */}
-                    <div className="lg:col-span-4">
-                        {/* CRITICAL: Pass the 'full_text' from backend to the chat 
-                           so it knows what document it's talking about.
-                        */}
-                        <ChatSidebar 
-                            file={file} 
-                            documentContext={analysisData?.full_text || ""} 
-                        />
+                    {/* Right sidebar - Chat (expands when analysis is done) */}
+                    <div className={`${analysisData ? 'lg:col-span-4' : 'hidden'} transition-all duration-500`}>
+                        {analysisData && (
+                            <ChatSidebar
+                                file={file}
+                                documentContext={analysisData?.full_text || ""}
+                                analysisData={analysisData}
+                                isExpanded={!!analysisData}
+                            />
+                        )}
                     </div>
                 </div>
             </main>

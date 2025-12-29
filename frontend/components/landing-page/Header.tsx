@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { Scale, Menu, X } from 'lucide-react';
+import { Scale, Menu, X, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import AuthModal from '@/components/auth/AuthModal';
+import { useSession, signOut } from '@/lib/auth-client';
 
 const navLinks = [
     { label: "Features", href: "#features" },
@@ -14,10 +15,13 @@ const navLinks = [
 ];
 
 export default function Header() {
+    const { data: session, isPending } = useSession();
     const [isScrolled, setIsScrolled] = React.useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
     const [authMode, setAuthMode] = React.useState<'signin' | 'signup'>('signin');
+    const [showUserMenu, setShowUserMenu] = React.useState(false);
+    const userMenuRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -26,6 +30,23 @@ export default function Header() {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Close dropdown when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        if (showUserMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showUserMenu]);
 
     const openSignIn = () => {
         setAuthMode('signin');
@@ -37,6 +58,12 @@ export default function Header() {
         setAuthMode('signup');
         setIsAuthModalOpen(true);
         setIsMobileMenuOpen(false);
+    };
+
+    const handleLogout = async () => {
+        await signOut();
+        setShowUserMenu(false);
+        window.location.reload();
     };
 
     return (
@@ -78,20 +105,80 @@ export default function Header() {
                         ))}
                     </nav>
 
-                    {/* Auth Buttons */}
+                    {/* Auth Buttons / User Menu */}
                     <div className="hidden md:flex items-center gap-3">
-                        <button
-                            onClick={openSignIn}
-                            className="px-4 py-2 text-sm text-white/70 hover:text-white transition-colors"
-                        >
-                            Sign In
-                        </button>
-                        <button
-                            onClick={openSignUp}
-                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25"
-                        >
-                            Get Started
-                        </button>
+                        {isPending ? (
+                            <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+                        ) : session?.user ? (
+                            // User is logged in - show profile
+                            <div ref={userMenuRef} className="relative">
+                                <button
+                                    onClick={() => setShowUserMenu(!showUserMenu)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                                >
+                                    {session.user.image ? (
+                                        <img
+                                            src={session.user.image}
+                                            alt={session.user.name || 'User'}
+                                            className="w-8 h-8 rounded-full border border-white/20"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium">
+                                                {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <span className="text-sm text-white/80">
+                                        {session.user.name || session.user.email?.split('@')[0]}
+                                    </span>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {showUserMenu && (
+                                    <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-white/10 shadow-xl overflow-hidden z-[100]">
+                                        <div className="px-4 py-3 border-b border-white/10">
+                                            <p className="text-sm font-medium text-white truncate">
+                                                {session.user.name}
+                                            </p>
+                                            <p className="text-xs text-white/50 truncate">
+                                                {session.user.email}
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href="/upload"
+                                            onClick={() => setShowUserMenu(false)}
+                                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                                        >
+                                            📄 Analyze Contract
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sign out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // User not logged in - show sign in/up buttons
+                            <>
+                                <button
+                                    onClick={openSignIn}
+                                    className="px-4 py-2 text-sm text-white/70 hover:text-white transition-colors"
+                                >
+                                    Sign In
+                                </button>
+                                <button
+                                    onClick={openSignUp}
+                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25"
+                                >
+                                    Get Started
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -124,18 +211,60 @@ export default function Header() {
                             </a>
                         ))}
                         <div className="pt-4 border-t border-white/10 space-y-3">
-                            <button
-                                onClick={openSignIn}
-                                className="w-full py-3 text-white/70 hover:text-white transition-colors"
-                            >
-                                Sign In
-                            </button>
-                            <button
-                                onClick={openSignUp}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
-                            >
-                                Get Started
-                            </button>
+                            {session?.user ? (
+                                // User logged in - mobile view
+                                <>
+                                    <div className="flex items-center gap-3 py-2">
+                                        {session.user.image ? (
+                                            <img
+                                                src={session.user.image}
+                                                alt={session.user.name || 'User'}
+                                                className="w-10 h-10 rounded-full border border-white/20"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                                <span className="text-white font-medium">
+                                                    {session.user.name?.charAt(0) || 'U'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="text-white font-medium">{session.user.name}</p>
+                                            <p className="text-xs text-white/50">{session.user.email}</p>
+                                        </div>
+                                    </div>
+                                    <Link
+                                        href="/upload"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="block w-full py-3 text-center rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
+                                    >
+                                        Analyze Contract
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full py-3 text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Sign out
+                                    </button>
+                                </>
+                            ) : (
+                                // User not logged in - mobile view
+                                <>
+                                    <button
+                                        onClick={openSignIn}
+                                        className="w-full py-3 text-white/70 hover:text-white transition-colors"
+                                    >
+                                        Sign In
+                                    </button>
+                                    <button
+                                        onClick={openSignUp}
+                                        className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
+                                    >
+                                        Get Started
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </motion.div>
