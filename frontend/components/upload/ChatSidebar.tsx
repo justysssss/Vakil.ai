@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Bot, User, FileText, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, Bot, User, FileText, Sparkles, AlertCircle } from 'lucide-react';
 
 interface Message {
     id: string;
@@ -13,9 +13,10 @@ interface Message {
 
 interface ChatSidebarProps {
     file: File | null;
+    documentContext: string; // <--- Added this prop
 }
 
-export default function ChatSidebar({ file }: ChatSidebarProps) {
+export default function ChatSidebar({ file, documentContext }: ChatSidebarProps) {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [input, setInput] = React.useState('');
     const [isTyping, setIsTyping] = React.useState(false);
@@ -27,12 +28,20 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
 
     React.useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, isTyping]);
 
-    const handleSendMessage = (e: React.FormEvent) => {
+    const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validation: Must have input, file, and the text must be analyzed already
         if (!input.trim() || !file) return;
+        
+        if (!documentContext) {
+            alert("Please click 'Analyze Contract' first so I can read the document!");
+            return;
+        }
 
+        // 1. Add User Message to UI immediately
         const userMessage: Message = {
             id: Date.now().toString(),
             role: 'user',
@@ -44,17 +53,52 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
         setInput('');
         setIsTyping(true);
 
-        // Simulate AI response (will be replaced with actual backend call)
-        setTimeout(() => {
+        try {
+            // 2. Prepare the History for the Backend
+            // We map the existing state to the simple format backend expects
+            const historyPayload = messages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+            }));
+
+            // 3. Call the Backend
+            const response = await fetch("http://localhost:8000/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question: userMessage.content,
+                    history: historyPayload,
+                    document_context: documentContext // <--- Crucial: Sending the PDF text
+                }),
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch response");
+
+            const data = await response.json();
+
+            // 4. Add Assistant Message to UI
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "I'll analyze that section of the contract for you. This functionality will be connected to the backend soon.",
+                content: data.answer, // <--- Response from Groq/Llama
                 timestamp: new Date(),
             };
+
             setMessages(prev => [...prev, assistantMessage]);
+
+        } catch (error) {
+            console.error("Chat Error:", error);
+            // Add error message to chat
+            const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: "Sorry, I encountered an error connecting to the server. Please check if the backend is running.",
+                timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -78,7 +122,7 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 <AnimatePresence mode="popLayout">
                     {!file ? (
                         <motion.div
@@ -111,6 +155,15 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
                             <p className="text-white/50 text-sm mt-2">
                                 Ask me anything about "{file.name}"
                             </p>
+                            
+                            {/* Warning if analyzed data is missing */}
+                            {!documentContext && (
+                                <div className="mt-4 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2 text-yellow-200/80 text-xs">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>Please click "Analyze" first to enable chat</span>
+                                </div>
+                            )}
+
                             <div className="mt-6 space-y-2 w-full">
                                 {[
                                     "What are the key clauses?",
@@ -119,7 +172,10 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
                                 ].map((suggestion, i) => (
                                     <button
                                         key={i}
-                                        onClick={() => setInput(suggestion)}
+                                        onClick={() => {
+                                            setInput(suggestion);
+                                            // Optional: Auto-send on click
+                                        }}
                                         className="w-full px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 
                                                  text-white/60 text-sm text-left transition-all duration-200
                                                  border border-white/5 hover:border-white/10"
@@ -200,8 +256,8 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={file ? "Ask about the contract..." : "Upload a PDF first"}
-                        disabled={!file}
+                        placeholder={documentContext ? "Ask about the contract..." : "Analyze document first..."}
+                        disabled={!file || !documentContext || isTyping}
                         className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/10 
                                  text-white placeholder-white/40 text-sm
                                  focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20
@@ -210,7 +266,7 @@ export default function ChatSidebar({ file }: ChatSidebarProps) {
                     />
                     <button
                         type="submit"
-                        disabled={!file || !input.trim()}
+                        disabled={!file || !input.trim() || !documentContext || isTyping}
                         className="px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 
                                  text-white font-medium
                                  hover:from-violet-600 hover:to-purple-700
