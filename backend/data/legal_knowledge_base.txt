@@ -1,0 +1,54 @@
+=== THE INDIAN CONTRACT ACT, 1872 (RELEVANT SECTIONS FOR NDAs) ===
+
+[Section 10: What agreements are contracts]
+All agreements are contracts if they are made by the free consent of parties competent to contract, for a lawful consideration and with a lawful object, and are not hereby expressly declared to be void.
+*Relevance:* An NDA is only valid if both parties consent freely. If an employee is forced to sign under duress, it may be voidable.
+
+[Section 19: Voidability of agreements without free consent]
+When consent to an agreement is caused by coercion, fraud or misrepresentation, the agreement is a contract voidable at the option of the party whose consent was so caused.
+*Relevance:* If the NDA hides terms or misrepresents the nature of the work, it can be voided.
+
+[Section 23: What consideration and objects are lawful, and what not]
+The consideration or object of an agreement is lawful, unless it is forbidden by law; or is of such a nature that, if permitted, it would defeat the provisions of any law; or is fraudulent; or involves or implies, injury to the person or property of another; or the Court regards it as immoral, or opposed to public policy.
+*Relevance:* Catch-all for "bad" clauses. If an NDA asks you to do something illegal or hide illegal acts (whistleblowing), it is void under Section 23.
+
+[Section 27: Agreement in Restraint of Trade, Void]
+Every agreement by which any one is restrained from exercising a lawful profession, trade or business of any kind, is to that extent void.
+*Relevance:* This is the #1 defense against Non-Competes in India. Post-employment non-compete clauses (banning you from working for competitors after you quit) are generally void.
+
+[Section 28: Agreements in Restraint of Legal Proceedings, Void]
+Every agreement is void to the extent that it:
+(a) restricts absolutely any party from enforcing his rights under or in respect of any contract, by the usual legal proceedings in the ordinary tribunals, or which limits the time within which he may thus enforce his rights.
+*Relevance:* Clauses that say "You cannot sue us" or "You must sue within 30 days" are illegal. You cannot contract out of your right to legal recourse.
+
+[Section 29: Agreements Void for Uncertainty]
+Agreements, the meaning of which is not certain, or capable of being made certain, are void.
+*Relevance:* If an NDA defines "Confidential Information" as "Everything you see and hear forever," it is too vague and likely void.
+
+[Section 73: Compensation for Loss or Damage]
+When a contract has been broken, the party who suffers by such breach is entitled to receive compensation for any loss or damage caused to him thereby, which naturally arose in the usual course of things.
+*Relevance:* Liability is limited to "actual loss."
+
+[Section 74: Penalty Clauses]
+When a contract has been broken, if a sum is named in the contract as the amount to be paid in case of such breach, the party complaining of the breach is entitled to receive reasonable compensation not exceeding the amount so named.
+*Relevance:* "Liquidated Damages" of huge amounts (e.g., $1 Million penalty) are rarely enforced as-is; courts look for actual reasonable loss.
+
+=== THE SPECIFIC RELIEF ACT, 1963 ===
+
+[Section 14: Contracts Not Specifically Enforceable]
+A contract for the non-performance of which compensation in money is an adequate relief cannot be specifically enforced. Contracts dependent on personal qualifications (like employment) cannot be enforced.
+*Relevance:* An employer cannot force you to stay in a job (Specific Performance). They can only sue for monetary damages if you leave early.
+
+[Section 41: Injunction When Refused]
+An injunction cannot be granted to prevent the breach of a contract the performance of which would not be specifically enforced.
+*Relevance:* Employers cannot get a court order to stop you from joining another company (unless you are stealing specific trade secrets).
+
+=== THE INFORMATION TECHNOLOGY ACT, 2000 (DATA PROTECTION) ===
+
+[Section 43A: Compensation for failure to protect data]
+Where a body corporate, possessing, dealing or handling any sensitive personal data or information in a computer resource which it owns, controls or operates, is negligent in implementing and maintaining reasonable security practices and procedures and thereby causes wrongful loss or wrongful gain to any person, such body corporate shall be liable to pay damages by way of compensation to the person so affected.
+*Relevance:* The company must protect YOUR data (biometrics, bank info) provided during employment.
+
+[Section 72A: Punishment for Disclosure in Breach of Lawful Contract]
+Any person who has secured access to any material containing personal information about another person, with the intent to cause or knowing that he is likely to cause wrongful loss or wrongful gain discloses, without the consent of the person concerned, or in breach of a lawful contract, such material to any other person, shall be punished.
+*Relevance:* Protects employees from employers selling/leaking their personal info.
