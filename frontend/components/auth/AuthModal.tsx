@@ -29,7 +29,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
                 provider: "google",
                 callbackURL: "/upload",
             });
-        } catch (err) {
+        } catch {
             setError("Failed to sign in with Google. Please try again.");
             setIsLoading(false);
         }
@@ -67,7 +67,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
                     router.push('/upload');
                 }
             }
-        } catch (err) {
+        } catch {
             setError("An unexpected error occurred. Please try again.");
         } finally {
             setIsLoading(false);

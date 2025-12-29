@@ -10,7 +10,6 @@ import {
     Mail,
     Scale,
     Clock,
-    Languages
 } from 'lucide-react';
 
 const features = [

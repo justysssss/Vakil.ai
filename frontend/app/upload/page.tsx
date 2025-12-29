@@ -7,7 +7,7 @@ import UploadControls from '@/components/upload/UploadControls';
 import PdfViewer from '@/components/pdf/PdfViewer';
 import UploadSidebar from '@/components/upload/Sidebar';
 import ChatSidebar from '@/components/upload/ChatSidebar';
-import { ArrowLeft, Scale, AlertTriangle, CheckCircle, FileText, LogOut, User } from 'lucide-react';
+import { ArrowLeft, Scale, AlertTriangle, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useSession, signOut } from '@/lib/auth-client';
 
@@ -137,6 +137,7 @@ export default function UploadPage() {
                                             src={session.user.image}
                                             alt={session.user.name || 'User'}
                                             className="w-8 h-8 rounded-full border border-white/20"
+                                        // eslint-disable-next-line @next/next/no-img-element
                                         />
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -212,7 +213,7 @@ export default function UploadPage() {
                                                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                                                 <div>
                                                     <h5 className="font-medium text-red-200 text-sm mb-1">{risk.risk_level} Risk</h5>
-                                                    <p className="text-xs text-white/60 mb-2 line-clamp-2">"{risk.clause}"</p>
+                                                    <p className="text-xs text-white/60 mb-2 line-clamp-2">&quot;{risk.clause}&quot;</p>
                                                     <p className="text-xs text-red-300/80 italic">{risk.reason}</p>
                                                 </div>
                                             </div>

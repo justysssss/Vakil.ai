@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Bot, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
 
 interface Message {
     id: string;
@@ -129,7 +129,6 @@ export default function ChatSidebar({ file, documentContext, analysisData, isExp
         if (documentContext) {
             setInput(suggestion);
             // Auto-submit the suggestion
-            const fakeEvent = { preventDefault: () => { } } as React.FormEvent;
             setTimeout(() => {
                 const form = document.querySelector('form');
                 form?.dispatchEvent(new Event('submit', { bubbles: true }));
@@ -233,7 +232,7 @@ export default function ChatSidebar({ file, documentContext, analysisData, isExp
                             {!documentContext && (
                                 <div className="mt-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-amber-200/80 text-sm">
                                     <AlertCircle className="w-4 h-4" />
-                                    <span>Click "Analyze" to enable chat</span>
+                                    <span>Click &quot;Analyze&quot; to enable chat</span>
                                 </div>
                             )}
 
@@ -268,7 +267,7 @@ export default function ChatSidebar({ file, documentContext, analysisData, isExp
                                     <Scale className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/10 text-white/90 text-sm">
-                                    <p>👋 Hi! I'm VakilAI, your legal assistant. I've analyzed your contract and I'm ready to help you understand it better. What would you like to know?</p>
+                                    <p>👋 Hi! I&apos;m VakilAI, your legal assistant. I&apos;ve analyzed your contract and I&apos;m ready to help you understand it better. What would you like to know?</p>
                                 </div>
                             </motion.div>
 
