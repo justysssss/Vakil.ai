@@ -205,11 +205,16 @@ export async function analyzeDocumentAction(formData: FormData) {
   }
 }
 
+export type MessageHistory = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 // --- 2. PROXY: Chat ---
 export async function getChatResponseAction(
     chatId: string, 
     userQuestion: string, 
-    history: any[], 
+    history: MessageHistory[], 
     documentContext: string
 ) {
     // A. Verify User Session

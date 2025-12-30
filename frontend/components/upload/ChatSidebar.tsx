@@ -21,6 +21,11 @@ interface Risk {
     suggestion: string;
 }
 
+type MessageHistory = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 interface ChatSidebarProps {
     file: File | null;
     documentContext: string;
@@ -129,7 +134,7 @@ export default function ChatSidebar({
 
             // C. Call AI Server Action
             // We map the messages to simple objects to avoid passing Date objects or extra fields to Server Action if needed
-            const historyPayload = messages.map(msg => ({
+            const historyPayload: MessageHistory[] = messages.map(msg => ({
                 role: msg.role,
                 content: msg.content
             }));
