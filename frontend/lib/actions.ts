@@ -5,12 +5,28 @@ import { nanoid } from "nanoid"; // npm install nanoid
 import { eq } from "drizzle-orm";
 import { chat, document, message } from "./db/schema";
 
+
+
+export interface Risk {
+  clause: string;
+  risk_level: "High" | "Medium" | "Low";
+  reason: string;
+  suggestion: string;
+}
+
+export interface AnalysisResult {
+  summary: string;
+  risks: Risk[];
+  score: number;
+  full_text?: string; // It's optional here because we store it in a separate column too
+}
+
 // 1. Save the Analyzed Document
 export async function saveDocument(
   userId: string,
   fileName: string,
   text: string,
-  analysisResult: any,
+  analysisResult: AnalysisResult,
   score: number
 ) {
   try {
