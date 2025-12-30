@@ -3,9 +3,10 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
-import { saveMessage } from '@/lib/actions';
+import { getChatResponseAction, saveMessage, getChatMessages } from '@/lib/actions';
 import ReactMarkdown from 'react-markdown';
 
+// --- Types ---
 interface Message {
     id: string;
     role: 'user' | 'assistant';
@@ -20,24 +21,36 @@ interface Risk {
     suggestion: string;
 }
 
+type MessageHistory = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 interface ChatSidebarProps {
     file: File | null;
     documentContext: string;
+    chatId: string | null;
     analysisData?: {
         summary?: string;
         risks?: Risk[];
         score?: number;
     } | null;
     isExpanded?: boolean;
-    chatId: string | null;
 }
 
-export default function ChatSidebar({ file, documentContext, chatId, analysisData, isExpanded = false }: ChatSidebarProps) {
+export default function ChatSidebar({ 
+    file, 
+    documentContext, 
+    chatId, 
+    analysisData, 
+    isExpanded = false 
+}: ChatSidebarProps) {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [input, setInput] = React.useState('');
     const [isTyping, setIsTyping] = React.useState(false);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
+    // --- 1. Auto-scroll to bottom ---
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -46,30 +59,33 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
         scrollToBottom();
     }, [messages, isTyping]);
 
+    // --- 2. Load Chat History when chatId changes ---
     React.useEffect(() => {
         const loadHistory = async () => {
             if (chatId) {
                 try {
-                    const { getChatMessages } = await import("@/lib/actions");
                     const result = await getChatMessages(chatId);
                     if (result.success && result.messages) {
-                        const history: Message[] = result.messages.map(m => ({
+                        const history: Message[] = result.messages.map((m) => ({
                             id: m.id,
                             role: m.role as 'user' | 'assistant',
                             content: m.content,
-                            timestamp: m.createdAt
+                            timestamp: new Date(m.createdAt)
                         }));
                         setMessages(history);
                     }
                 } catch (e) {
                     console.error("Failed to load chat history:", e);
                 }
+            } else {
+                // Reset messages if no chat ID (e.g. cleared session)
+                setMessages([]);
             }
         };
         loadHistory();
     }, [chatId]);
 
-    // Generate dynamic suggestions based on analysis
+    // --- 3. Dynamic Suggestions Logic ---
     const getDynamicSuggestions = (): string[] => {
         const baseSuggestions = [
             "Summarize this contract in simple terms",
@@ -78,7 +94,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
         ];
 
         if (analysisData?.risks && analysisData.risks.length > 0) {
-            const riskSuggestions = analysisData.risks.slice(0, 2).map(risk =>
+            const riskSuggestions = analysisData.risks.slice(0, 2).map(risk => 
                 `Explain the risk: "${risk.clause.substring(0, 40)}..."`
             );
             return [...riskSuggestions, baseSuggestions[0]];
@@ -87,6 +103,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
         return baseSuggestions;
     };
 
+    // --- 4. Send Message Handler ---
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -97,6 +114,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
             return;
         }
 
+        // A. Add User Message to UI (Optimistic)
         const userMessage: Message = {
             id: Date.now().toString(),
             role: 'user',
@@ -109,36 +127,40 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
         setIsTyping(true);
 
         try {
-            const historyPayload = messages.map(msg => ({
-                role: msg.role,
-                content: msg.content
-            }));
+            // B. Save User Message to DB (Fire & Forget)
             if (chatId) {
                 saveMessage(chatId, 'user', userMessage.content);
             }
 
-            const response = await fetch("http://localhost:8000/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    question: userMessage.content,
-                    history: historyPayload,
-                    document_context: documentContext
-                }),
-            });
+            // C. Call AI Server Action
+            // We map the messages to simple objects to avoid passing Date objects or extra fields to Server Action if needed
+            const historyPayload: MessageHistory[] = messages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+            }));
 
-            if (!response.ok) throw new Error("Failed to fetch response");
+            const result = await getChatResponseAction(
+                chatId || "temp", // Fallback if ID missing, though UI usually prevents this
+                userMessage.content,
+                historyPayload,
+                documentContext
+            );
 
-            const data = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || "Failed to get response");
+            }
 
+            // D. Add Assistant Message to UI
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: data.answer,
+                content: result.answer,
                 timestamp: new Date(),
             };
 
             setMessages(prev => [...prev, assistantMessage]);
+
+            // E. Save Assistant Message to DB (Fire & Forget)
             if (chatId) {
                 saveMessage(chatId, 'assistant', assistantMessage.content);
             }
@@ -148,7 +170,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "Sorry, I couldn't connect to VakilAI. Please check if the backend is running on localhost:8000.",
+                content: "Sorry, I couldn't connect to VakilAI. Please try again later.",
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, errorMessage]);
@@ -160,10 +182,10 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
     const handleSuggestionClick = (suggestion: string) => {
         if (documentContext) {
             setInput(suggestion);
-            // Auto-submit the suggestion
+            // Small timeout to allow state to update before submitting
             setTimeout(() => {
-                const form = document.querySelector('form');
-                form?.dispatchEvent(new Event('submit', { bubbles: true }));
+                const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+                submitButton?.click();
             }, 100);
         }
     };
@@ -203,10 +225,10 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                     <div className="mt-3 flex items-center gap-2">
                         <div className={`
                             px-3 py-1.5 rounded-lg text-xs font-medium
-                            ${analysisData.score > 70
-                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                : analysisData.score > 40
-                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                            ${analysisData.score > 70 
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                : analysisData.score > 40 
+                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
                                     : 'bg-red-500/20 text-red-400 border border-red-500/30'
                             }
                         `}>
@@ -255,7 +277,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                                 {documentContext ? "Ready to help!" : "Analyzing..."}
                             </h4>
                             <p className="text-white/50 text-sm mt-2 max-w-[280px]">
-                                {documentContext
+                                {documentContext 
                                     ? `Ask me anything about "${file.name}". I've analyzed the document and found ${analysisData?.risks?.length || 0} potential risks.`
                                     : "Click 'Analyze Contract' to enable AI chat"
                                 }
@@ -289,7 +311,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                         </motion.div>
                     ) : (
                         <>
-                            {/* Welcome message */}
+                            {/* Welcome message bubble - only show if there are messages */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -299,7 +321,7 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                                     <Scale className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/10 text-white/90 text-sm">
-                                    <p>👋 Hi! I&apos;m VakilAI, your legal assistant. I&apos;ve analyzed your contract and I&apos;m ready to help you understand it better. What would you like to know?</p>
+                                    <p>👋 Hi! I&apos;m VakilAI. I&apos;ve analyzed your contract. What would you like to know?</p>
                                 </div>
                             </motion.div>
 
@@ -312,19 +334,19 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                                 >
                                     <div className={`
                                         flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-                                        ${message.role === 'user'
-                                            ? 'bg-violet-500/20'
+                                        ${message.role === 'user' 
+                                            ? 'bg-violet-500/20' 
                                             : 'bg-gradient-to-br from-violet-500 to-purple-600'}
                                     `}>
-                                        {message.role === 'user'
+                                        {message.role === 'user' 
                                             ? <User className="w-4 h-4 text-violet-400" />
                                             : <Scale className="w-4 h-4 text-white" />
                                         }
                                     </div>
                                     <div className={`
                                         max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed
-                                        ${message.role === 'user'
-                                            ? 'bg-violet-500/20 text-white rounded-tr-md'
+                                        ${message.role === 'user' 
+                                            ? 'bg-violet-500/20 text-white rounded-tr-md' 
                                             : 'bg-white/10 text-white/90 rounded-tl-md'
                                         }
                                     `}>

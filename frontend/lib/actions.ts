@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { nanoid } from "nanoid"; // npm install nanoid
 import { asc, desc, eq } from "drizzle-orm";
 import { chat, document, message } from "./db/schema";
+import { auth } from "./auth";
+import { headers } from "next/headers";
 
 
 
@@ -159,4 +161,104 @@ export async function deleteChatSession(chatId: string) {
     console.error("Failed to delete chat:", error);
     return { success: false, error: "Failed to delete chat" };
   }
+}
+
+const PYTHON_URL = process.env.NEXT_PUBLIC_APP_BACKEND_URL || "http://localhost:8000";
+const INTERNAL_SECRET = process.env.INTERNAL_BACKEND_SECRET!;
+
+// --- 1. PROXY: Analyze Document ---
+export async function analyzeDocumentAction(formData: FormData) {
+  // A. Verify User Session
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    // B. Call Python with Secret Header
+    const response = await fetch(`${PYTHON_URL}/analyze`, {
+      method: "POST",
+      headers: {
+        "x-internal-secret": INTERNAL_SECRET, // <--- The Handshake
+      },
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error("Backend analysis failed");
+    
+    const data = await response.json();
+
+    // C. Save to Database (Your existing logic)
+    // You can call your internal DB save function here directly
+    const docId = nanoid();
+    await db.insert(document).values({
+      id: docId,
+      userId: session.user.id,
+      name: (formData.get("file") as File).name,
+      extractedText: data.full_text,
+      analysis: data,
+      score: data.score,
+    });
+
+    return { success: true, docId, data };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Analysis failed" };
+  }
+}
+
+export type MessageHistory = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+// --- 2. PROXY: Chat ---
+export async function getChatResponseAction(
+    chatId: string, 
+    userQuestion: string, 
+    history: MessageHistory[], 
+    documentContext: string
+) {
+    // A. Verify User Session
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    try {
+        // B. Call Python with Secret Header
+        const response = await fetch(`${PYTHON_URL}/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-internal-secret": INTERNAL_SECRET, // <--- The Handshake
+            },
+            body: JSON.stringify({
+                question: userQuestion,
+                history: history,
+                document_context: documentContext
+            }),
+        });
+
+        if (!response.ok) throw new Error("AI Error");
+        const data = await response.json();
+
+        // C. Save Messages to DB (Your existing logic)
+        // Save User Msg
+        await db.insert(message).values({
+            id: nanoid(),
+            chatId: chatId,
+            role: "user",
+            content: userQuestion
+        });
+        
+        // Save AI Msg
+        await db.insert(message).values({
+            id: nanoid(),
+            chatId: chatId,
+            role: "assistant",
+            content: data.answer
+        });
+
+        return { success: true, answer: data.answer };
+
+    } catch (error) {
+        return { success: false, error: "Chat failed" };
+    }
 }

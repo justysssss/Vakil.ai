@@ -1,6 +1,6 @@
 import os
 import shutil
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import Depends, FastAPI, Security, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from numpy import isin
 from pydantic import BaseModel
@@ -30,13 +30,22 @@ vectorstore = Chroma(persist_directory="./chroma_db/", embedding_function=embedd
 retriver = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 llm = ChatGroq(temperature=0, model="llama-3.1-8b-instant")
-
+from fastapi.security import APIKeyHeader
 class ChatRequest(BaseModel):
     question: str
     history: list = []
     document_context: str
 
-@app.post("/chat")
+api_key_header = APIKeyHeader(name="x-internal-secret", auto_error=False) 
+
+async def verify_secret(api_key: str = Security(api_key_header)):
+    secret = os.getenv("INTERNAL_BACKEND_SECRET")
+
+    if api_key != secret:
+        raise HTTPException(status_code=403, detail="Could not validate credentials")
+    return api_key
+
+@app.post("/chat", dependencies=[Depends(verify_secret)])
 async def chat_endpoint(request: ChatRequest):
     try:
         messages = [
@@ -89,7 +98,7 @@ Return the output in purely JSON format with this structure:
 IMPORTANT: Return ONLY the raw JSON. Do not use Markdown formatting (no ```json or ```). Do not add any conversational text before or after the JSON.
 """
 
-@app.post("/analyze")
+@app.post("/analyze", dependencies=[Depends(verify_secret)])
 async def analyze_document(file: UploadFile = File(...)):
     temp_filename = f"temp_{file.filename}"
     with open(temp_filename, "wb") as buffer:
