@@ -26,6 +26,8 @@ VakilAI uses a sophisticated **Retrieval-Augmented Generation (RAG)** pipeline t
 4.  **AI Analysis**: These chunks are fed into the LLM (Llama 3 via Groq) along with your query. The AI acts as a legal expert, analyzing *only* the retrieving context to generate a precise answer.
     *   *Result*: Zero hallucinations, and answers grounded strictly in your document's facts.
 
+![How It Works](frontend/public/howitworks_page.png)
+
 ---
 
 ## ✨ Features that Protect You
@@ -45,9 +47,10 @@ Upload any legal PDF, and our AI instantly scans for:
 
 ![Risk Analysis](frontend/public/analyze_page.png)
 
-### 💬 Talk to Your Lawyer (AI)
+### 💬 Talk to Your Lawyer & Manage Sessions
 Don't understand a "Termination for Convenience" clause? Just ask.
 *   **Context-Aware**: The AI knows *exactly* what's in your specific document.
+*   **Persistent Sessions**: Your chat history and analysis reports are securely stored in our **Neon PostgreSQL** database. You can revisit past contract analyses at any time from your profile.
 *   **Plain English**: No legalese. Just simple answers.
 
 ![Chat Interface](frontend/public/sessions_page.png)
@@ -55,6 +58,9 @@ Don't understand a "Termination for Convenience" clause? Just ask.
 ### 📊 Free & Pro Tiers
 *   **Free**: Summarize up to 5 documents/month.
 *   **Pro**: Unlimited analysis, deeper insights, and priority support.
+Choose the plan that fits your needs. Get professional legal analysis for a fraction of the cost.
+
+![Pricing Plans](frontend/public/pricing_page.png)
 
 ---
 
