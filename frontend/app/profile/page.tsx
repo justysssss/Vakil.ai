@@ -15,7 +15,7 @@ export default async function ProfilePage() {
         return redirect("/");
     }
 
-    const { success, chats } = await getUserChats(session.user.id);
+    const { chats } = await getUserChats(session.user.id);
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white">

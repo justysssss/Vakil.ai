@@ -75,7 +75,7 @@ function UploadPageContent() {
         };
 
         loadSession();
-    }, [urlChatId]);
+    }, [urlChatId, analysisData]);
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -203,11 +203,11 @@ function UploadPageContent() {
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                                 >
                                     {session.user.image ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={session.user.image}
                                             alt={session.user.name || 'User'}
                                             className="w-8 h-8 rounded-full border border-white/20"
-                                        // eslint-disable-next-line @next/next/no-img-element
                                         />
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">

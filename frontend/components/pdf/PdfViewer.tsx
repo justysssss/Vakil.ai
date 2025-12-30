@@ -74,7 +74,7 @@ export default function PdfViewer({ file, risks = [] }: PdfViewerProps) {
                 </p>
                 {file && file.size === 0 && (
                     <p className="text-white/40 text-sm text-center mt-2 max-w-md px-4">
-                        For privacy, we don't store your original files. You can still chat with the AI using the context we saved.
+                        For privacy, we don&apos;t store your original files. You can still chat with the AI using the context we saved.
                     </p>
                 )}
             </motion.div>

@@ -67,7 +67,7 @@ export async function createChatSession(userId: string, documentId: string) {
     });
 
     return { success: true, chatId };
-  } catch (error) {
+  } catch {
     return { success: false, error: "Failed to create chat" };
   }
 }
@@ -82,7 +82,7 @@ export async function saveMessage(chatId: string, role: "user" | "assistant", co
       content: content,
     });
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false, error: "Failed to save message" };
   }
 }
