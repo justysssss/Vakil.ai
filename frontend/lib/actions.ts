@@ -294,7 +294,7 @@ export async function getUsageStats(userId: string) {
   }
 }
 
-const PYTHON_URL = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
+const PYTHON_URL = process.env.NEXT_PUBLIC_APP_BACKEND_URL || "http://localhost:8000";
 const INTERNAL_SECRET = process.env.INTERNAL_BACKEND_SECRET!;
 
 // --- 1. PROXY: Analyze Document ---

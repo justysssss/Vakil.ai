@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
-import { saveMessage, getChatMessages } from '@/lib/actions';
+import { saveMessage, getChatMessages, getChatResponseAction } from '@/lib/actions';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -145,23 +145,17 @@ export default function ChatSidebar({
                 role: msg.role,
                 content: msg.content
             }));
+            const result = await getChatResponseAction(
+                chatId || "temp", // Fallback if ID missing, though UI usually prevents this
+                userMessage.content,
+                historyPayload,
+                documentContext
+            );
 
-            const response = await fetch("/api/proxy/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    question: userMessage.content,
-                    history: historyPayload,
-                    document_context: documentContext
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to get response from proxy API");
+            if (!result.success) {
+                throw new Error(result.error || "Unknown error from AI service");
             }
 
-            const result = await response.json(); // Parse the successful response
 
             // D. Add Assistant Message to UI
             const assistantMessage: Message = {
