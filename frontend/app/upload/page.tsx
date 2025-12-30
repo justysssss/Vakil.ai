@@ -109,7 +109,7 @@ function UploadPageContent() {
 
         try {
             // Replace with your actual backend URL
-            const response = await fetch("http://localhost:8000/analyze", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_APP_BACKEND_URL}/analyze`, {
                 method: "POST",
                 body: formData,
             });
