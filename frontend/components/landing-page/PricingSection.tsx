@@ -25,11 +25,11 @@ const plans = [
     {
         name: "Professional",
         description: "For growing businesses and teams",
-        price: "₹2,999",
+        price: "₹599",
         period: "/month",
         icon: Zap,
         features: [
-            "25 contract analyses per month",
+            "Unlimited contract analyses",
             "Unlimited chat messages",
             "Advanced clause detection",
             "MSME & Stamp Duty checks",

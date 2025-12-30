@@ -33,11 +33,34 @@ export default async function ProfilePage() {
                     </Link>
 
                     <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-2xl font-bold shadow-lg shadow-violet-500/20 border border-white/10">
-                            {session.user.name?.charAt(0) || "U"}
+                        <div className="relative">
+                            {(session.user as unknown as { isPro?: boolean }).isPro && (
+                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 opacity-75 blur-sm" />
+                            )}
+
+                            {session.user.image ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                    src={session.user.image}
+                                    alt={session.user.name || "User"}
+                                    className={`relative w-20 h-20 rounded-full object-cover ${(session.user as unknown as { isPro?: boolean }).isPro ? "border-2 border-amber-400" : "border border-white/10"}`}
+                                />
+                            ) : (
+                                <div className={`relative w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-2xl font-bold shadow-lg shadow-violet-500/20 ${(session.user as unknown as { isPro?: boolean }).isPro ? "border-2 border-amber-400" : "border border-white/10"}`}>
+                                    {session.user.name?.charAt(0) || "U"}
+                                </div>
+                            )}
                         </div>
+
                         <div>
-                            <h1 className="text-3xl font-bold mb-1">{session.user.name}</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold mb-1">{session.user.name}</h1>
+                                {(session.user as unknown as { isPro?: boolean }).isPro && (
+                                    <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-300/20 to-yellow-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                                        PRO
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-white/50 flex items-center gap-2">
                                 {session.user.email}
                             </p>
