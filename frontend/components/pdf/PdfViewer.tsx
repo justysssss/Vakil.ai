@@ -59,7 +59,7 @@ export default function PdfViewer({ file, risks = [] }: PdfViewerProps) {
         }
     };
 
-    if (!file) {
+    if (!file || file.size === 0) {
         return (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -69,9 +69,14 @@ export default function PdfViewer({ file, risks = [] }: PdfViewerProps) {
                 <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-4">
                     <FileText className="w-8 h-8 text-violet-400" />
                 </div>
-                <p className="text-white/60 text-center">
-                    Upload a PDF to preview
+                <p className="text-white/60 text-center font-medium">
+                    {file && file.size === 0 ? "Document Content Not Stored" : "Upload a PDF to preview"}
                 </p>
+                {file && file.size === 0 && (
+                    <p className="text-white/40 text-sm text-center mt-2 max-w-md px-4">
+                        For privacy, we don't store your original files. You can still chat with the AI using the context we saved.
+                    </p>
+                )}
             </motion.div>
         );
     }
