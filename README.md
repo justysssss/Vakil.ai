@@ -16,6 +16,18 @@ Whether you're a freelancer checking an NDA or a startup founder reviewing a Ser
 
 ---
 
+## ⚙️ How It Works (RAG Pipeline)
+
+VakilAI uses a sophisticated **Retrieval-Augmented Generation (RAG)** pipeline to ensure accuracy:
+
+1.  **Extraction**: The uploaded PDF is processed in-memory to extract text, while maintaining document structure.
+2.  **Vectorization**: The text is chunked and converted into vector embeddings using a specialized legal embedding model.
+3.  **Knowledge Verification**: When you ask a question, we first retrieve the most relevant chunks from your specific document.
+4.  **AI Analysis**: These chunks are fed into the LLM (Llama 3 via Groq) along with your query. The AI acts as a legal expert, analyzing *only* the retrieving context to generate a precise answer.
+    *   *Result*: Zero hallucinations, and answers grounded strictly in your document's facts.
+
+---
+
 ## ✨ Features that Protect You
 
 ### 🔒 Privacy-First Architecture

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
-import { getChatResponseAction, saveMessage, getChatMessages } from '@/lib/actions';
+import { saveMessage, getChatMessages } from '@/lib/actions';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -204,7 +204,7 @@ export default function ChatSidebar({
                 const { getUsageStats } = await import("@/lib/actions");
                 const stats = await getUsageStats(session.data.user.id);
                 if (stats.success && stats.messages) {
-                    setChatStats(stats.messages as any);
+                    setChatStats(stats.messages as { used: number; limit: number | string });
                 }
             }
         } catch (e) { console.error(e) }

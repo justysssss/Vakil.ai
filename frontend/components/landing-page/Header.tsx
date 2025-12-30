@@ -116,10 +116,11 @@ export default function Header() {
                                     onClick={() => setShowUserMenu(!showUserMenu)}
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                                 >
-                                    {(session.user as any).isPro ? (
+                                    {(session.user as unknown as { isPro?: boolean }).isPro ? (
                                         <div className="relative">
                                             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 opacity-75 blur-sm" />
                                             {session.user.image ? (
+                                                /* eslint-disable-next-line @next/next/no-img-element */
                                                 <img
                                                     src={session.user.image}
                                                     alt={session.user.name || 'User'}

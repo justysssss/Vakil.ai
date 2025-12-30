@@ -45,8 +45,9 @@ export async function POST(req: NextRequest) {
                 "Content-Type": contentType || "",
             },
             body: req.body, // Stream the body
-            duplex: 'half', // Required for Node.js fetch with streaming body
-        } as any);
+            // @ts-expect-error - duplex is required for streaming bodies in Node.js fetch
+            duplex: 'half',
+        });
 
         if (!response.ok) {
             const errorText = await response.text();

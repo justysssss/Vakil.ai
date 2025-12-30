@@ -399,7 +399,7 @@ export async function getChatResponseAction(
 
     return { success: true, answer: data.answer };
 
-  } catch (error) {
+  } catch {
     return { success: false, error: "Chat failed" };
   }
 }
