@@ -50,7 +50,7 @@ Don't understand a "Termination for Convenience" clause? Just ask.
 *   **Context-Aware**: The AI knows *exactly* what's in your specific document.
 *   **Plain English**: No legalese. Just simple answers.
 
-![Chat Interface](frontend/public/learnmore_page.png)
+![Chat Interface](frontend/public/sessions_page.png)
 
 ### 📊 Free & Pro Tiers
 *   **Free**: Summarize up to 5 documents/month.
