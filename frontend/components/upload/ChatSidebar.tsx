@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
+import { saveMessage } from '@/lib/actions';
 
 interface Message {
     id: string;
@@ -27,9 +28,10 @@ interface ChatSidebarProps {
         score?: number;
     } | null;
     isExpanded?: boolean;
+    chatId: string | null;
 }
 
-export default function ChatSidebar({ file, documentContext, analysisData, isExpanded = false }: ChatSidebarProps) {
+export default function ChatSidebar({ file, documentContext, chatId, analysisData, isExpanded = false }: ChatSidebarProps) {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [input, setInput] = React.useState('');
     const [isTyping, setIsTyping] = React.useState(false);
@@ -87,6 +89,9 @@ export default function ChatSidebar({ file, documentContext, analysisData, isExp
                 role: msg.role,
                 content: msg.content
             }));
+            if (chatId) {
+                saveMessage(chatId, 'user', userMessage.content);
+            }
 
             const response = await fetch("http://localhost:8000/chat", {
                 method: "POST",
@@ -110,6 +115,9 @@ export default function ChatSidebar({ file, documentContext, analysisData, isExp
             };
 
             setMessages(prev => [...prev, assistantMessage]);
+            if (chatId) {
+                saveMessage(chatId, 'assistant', assistantMessage.content);
+            }
 
         } catch (error) {
             console.error("Chat Error:", error);

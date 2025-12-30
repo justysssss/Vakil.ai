@@ -10,6 +10,7 @@ import ChatSidebar from '@/components/upload/ChatSidebar';
 import { ArrowLeft, Scale, AlertTriangle, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useSession, signOut } from '@/lib/auth-client';
+import { createChatSession, saveDocument } from '@/lib/actions';
 
 // Define types for the Backend Response
 interface Risk {
@@ -33,6 +34,8 @@ export default function UploadPage() {
     const [analysisData, setAnalysisData] = React.useState<AnalysisResult | null>(null);
     const [showUserMenu, setShowUserMenu] = React.useState(false);
     const userMenuRef = React.useRef<HTMLDivElement>(null);
+    const [chatId, setChatId] = React.useState<string | null>(null);
+
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -53,7 +56,7 @@ export default function UploadPage() {
 
     // 1. The Function to Call Backend
     const handleAnalyze = async () => {
-        if (!file) return;
+        if (!file || !session?.user) return;
 
         setIsAnalyzing(true);
         const formData = new FormData();
@@ -65,12 +68,31 @@ export default function UploadPage() {
                 method: "POST",
                 body: formData,
             });
-
-            if (!response.ok) throw new Error("Analysis failed");
-
             const data = await response.json();
-            console.log("Analysis Response Data:", data); // Debug log
             setAnalysisData(data);
+
+
+            const saveResult = await saveDocument(
+                session.user.id,
+                file.name,
+                data.full_text,
+                data,
+                data.score || 0
+            )
+            if (saveResult.success && saveResult.docId) {
+                const chatResult = await createChatSession(session.user.id, saveResult.docId);
+                if (chatResult.success && chatResult.chatId) {
+                    setChatId(chatResult.chatId);
+                } else if (chatResult.success) {
+                    console.error("Chat session created successfully but chatId is missing.");
+                    setChatId(null);
+                }
+            } else if (!saveResult.success) {
+                console.error(saveResult.error);
+            } else {
+                console.error("Document saved successfully but docId is missing.");
+            }
+
         } catch (error) {
             console.error(error);
             alert("Error analyzing document. Check backend console.");
@@ -82,6 +104,7 @@ export default function UploadPage() {
     const handleClear = () => {
         setFile(null);
         setAnalysisData(null);
+        setChatId(null);
     };
 
     const handleLogout = async () => {
@@ -251,6 +274,7 @@ export default function UploadPage() {
                     <div className={`${analysisData ? 'lg:col-span-4' : 'hidden'} transition-all duration-500`}>
                         {analysisData && (
                             <ChatSidebar
+                                chatId={chatId}
                                 file={file}
                                 documentContext={analysisData?.full_text || ""}
                                 analysisData={analysisData}

@@ -13,7 +13,7 @@ from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "../frontend/.env"))
+load_dotenv()
 
 app = FastAPI()
 
