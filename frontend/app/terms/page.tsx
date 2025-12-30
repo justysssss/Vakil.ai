@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Scale, AlertTriangle, FileCheck } from "lucide-react";
+import { ArrowLeft, Scale, AlertTriangle } from "lucide-react";
 import Footer from "@/components/landing-page/Footer";
 
 export default function TermsOfService() {

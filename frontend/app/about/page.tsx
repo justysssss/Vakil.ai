@@ -27,7 +27,7 @@ export default function AboutPage() {
                         Born from a Real Problem.
                     </h1>
                     <p className="text-xl text-white/60 leading-relaxed max-w-2xl mx-auto">
-                        We didn't build VakilAI just for fun. We built it because we saw good people get hurt by bad contracts.
+                        We didn&apos;t build VakilAI just for fun. We built it because we saw good people get hurt by bad contracts.
                     </p>
                 </header>
 
@@ -39,13 +39,13 @@ export default function AboutPage() {
                         <h2 className="text-2xl font-bold text-white mb-6 relative z-10">Why We Started</h2>
                         <div className="space-y-4 text-white/70 leading-relaxed relative z-10">
                             <p>
-                                It started when a close friend of ours landed his first major job opportunity. He was excited, eager, and—like many of us—didn't read the fine print.
+                                It started when a close friend of ours landed his first major job opportunity. He was excited, eager, and—like many of us—didn&apos;t read the fine print.
                             </p>
                             <p>
-                                Buried deep in the contract was a generic-looking employment bond that legally locked him into the company for two years. He signed it. When he tried to switch to a better role later, he was blindsided by a massive financial penalty clause he hadn't noticed. He was trapped. He lost months of career progress and peace of mind, all because of a few lines of text he didn't understand.
+                                Buried deep in the contract was a generic-looking employment bond that legally locked him into the company for two years. He signed it. When he tried to switch to a better role later, he was blindsided by a massive financial penalty clause he hadn&apos;t noticed. He was trapped. He lost months of career progress and peace of mind, all because of a few lines of text he didn&apos;t understand.
                             </p>
                             <p>
-                                We realized this wasn't just his problem. Legalese is designed to be confusing. Whether you're a freelancer, a startup founder, or a student renting an apartment, you're constantly signing things you don't fully grasp.
+                                We realized this wasn&apos;t just his problem. Legalese is designed to be confusing. Whether you&apos;re a freelancer, a startup founder, or a student renting an apartment, you&apos;re constantly signing things you don&apos;t fully grasp.
                             </p>
                             <p className="font-medium text-white pt-2 border-l-2 border-violet-500 pl-4">
                                 We decided to fix this. We built VakilAI to level the playing field—giving everyone access to a legal expert, without the $500/hour bill.
