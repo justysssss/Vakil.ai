@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { nanoid } from "nanoid"; // npm install nanoid
-import { eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { chat, document, message } from "./db/schema";
 
 
@@ -85,4 +85,34 @@ export async function saveMessage(chatId: string, role: "user" | "assistant", co
   } catch (error) {
     return { success: false, error: "Failed to save message" };
   }
+}
+
+export async function getUserChats(userId: string) {
+    try {
+        const userChats = await db.query.chat.findMany({
+            where: eq(chat.userId, userId),
+            with: {
+                document: true
+            },
+            orderBy: [desc(chat.createdAt)]
+        });
+        return { success: true, chats: userChats };
+    }catch (error) {
+        console.error("Failed to fetch user chats:", error);
+        return { success: false, error: "Failed to fetch chats" };
+    }
+}
+
+export async function getChatMessages(chatId: string) {
+    try {
+        const messages = await db.query.message.findMany({
+            where: eq(message.chatId, chatId),
+            orderBy: [asc(message.createdAt)]
+        });
+
+        return { success: true, messages: messages}
+    }catch (error) {
+        console.error("Failed to fetch chat messages:", error);
+        return { success: false, error: "Failed to fetch messages" };
+    }
 }
