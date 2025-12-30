@@ -11,7 +11,7 @@ const navLinks = [
     { label: "Features", href: "#features" },
     { label: "How it Works", href: "#how-it-works" },
     { label: "Pricing", href: "#pricing" },
-    { label: "About", href: "#about" },
+    { label: "About", href: "/about" },
 ];
 
 export default function Header() {
@@ -95,13 +95,13 @@ export default function Header() {
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8">
                         {navLinks.map((link, index) => (
-                            <a
+                            <Link
                                 key={index}
                                 href={link.href}
                                 className="text-sm text-white/60 hover:text-white transition-colors"
                             >
                                 {link.label}
-                            </a>
+                            </Link>
                         ))}
                     </nav>
 
@@ -220,14 +220,14 @@ export default function Header() {
                 >
                     <div className="p-6 space-y-4">
                         {navLinks.map((link, index) => (
-                            <a
+                            <Link
                                 key={index}
                                 href={link.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className="block py-2 text-white/70 hover:text-white transition-colors"
                             >
                                 {link.label}
-                            </a>
+                            </Link>
                         ))}
                         <div className="pt-4 border-t border-white/10 space-y-3">
                             {session?.user ? (
