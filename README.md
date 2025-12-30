@@ -3,7 +3,7 @@
 <div align="center">
   <p><strong>Democratizing Legal Understanding with Privacy-First AI</strong></p>
   
-  ![VakilAI Dashboard](frontend/public/demo-2.png)
+  ![VakilAI Dashboard](frontend/public/vakilai_landing.png)
 </div>
 
 ---
@@ -43,14 +43,14 @@ Upload any legal PDF, and our AI instantly scans for:
 *   Unfair Terms (e.g., Non-Competes)
 *   **Score**: Get a safety score (0-100) for every document.
 
-![Risk Analysis](frontend/public/demo-1.png)
+![Risk Analysis](frontend/public/analyze_page.png)
 
 ### 💬 Talk to Your Lawyer (AI)
 Don't understand a "Termination for Convenience" clause? Just ask.
 *   **Context-Aware**: The AI knows *exactly* what's in your specific document.
 *   **Plain English**: No legalese. Just simple answers.
 
-![Chat Interface](frontend/public/demo-3.png)
+![Chat Interface](frontend/public/learnmore_page.png)
 
 ### 📊 Free & Pro Tiers
 *   **Free**: Summarize up to 5 documents/month.

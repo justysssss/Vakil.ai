@@ -15,8 +15,8 @@ const steps = [
     {
         number: "02",
         icon: Cpu,
-        title: "AI Analysis",
-        description: "Our AI extracts text using AWS Textract and analyzes each clause against Indian legal standards.",
+        title: "RAG Pipeline Analysis",
+        description: "Your document is vectorized and checked against our legal knowledge base. The AI identifies risks based on context, not just keywords.",
         color: "purple",
     },
     {
@@ -29,8 +29,8 @@ const steps = [
     {
         number: "04",
         icon: Sparkles,
-        title: "Safe Alternatives",
-        description: "Receive AI-generated safe counter-clauses and professional email drafts ready to use.",
+        title: "Chat & Verify",
+        description: "Don't understand a clause? Chat with your AI lawyer to get instant simplifications and verification of facts.",
         color: "rose",
     },
 ];
