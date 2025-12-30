@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DropzoneProps {
     onFileSelect: (file: File | null) => void;
@@ -17,12 +18,12 @@ export default function Dropzone({ onFileSelect, accept = ['application/pdf'], s
     // Helper to validate and set file
     const handleFiles = (files?: FileList | null) => {
         if (!files || files.length === 0) return;
-        
+
         const file = files[0];
-        
+
         // Validate File Type
         if (accept.length > 0 && !accept.includes(file.type)) {
-            alert("Please upload a valid PDF file.");
+            toast.error("Please upload a valid PDF file.");
             return;
         }
 
@@ -107,7 +108,7 @@ export default function Dropzone({ onFileSelect, accept = ['application/pdf'], s
                                     <CheckCircle className="w-4 h-4 text-white" />
                                 </motion.div>
                             </div>
-                            
+
                             <div className="text-center">
                                 <p className="font-semibold text-white text-lg">{selectedFile.name}</p>
                                 <p className="text-sm text-white/50 mt-1">
@@ -138,10 +139,10 @@ export default function Dropzone({ onFileSelect, accept = ['application/pdf'], s
                                 ${isDragging ? 'bg-violet-500/30 scale-110' : 'bg-white/5 group-hover:bg-white/10'}
                             `}>
                                 <Upload className={`w-10 h-10 transition-colors duration-300 
-                                    ${isDragging ? 'text-violet-300' : 'text-white/40 group-hover:text-white/80'}`} 
+                                    ${isDragging ? 'text-violet-300' : 'text-white/40 group-hover:text-white/80'}`}
                                 />
                             </div>
-                            
+
                             <div className="text-center space-y-2">
                                 <p className="font-semibold text-white text-xl">
                                     {isDragging ? 'Drop it here!' : 'Upload Contract'}

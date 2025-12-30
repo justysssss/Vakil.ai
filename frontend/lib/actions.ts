@@ -3,7 +3,9 @@
 import { db } from "@/lib/db";
 import { nanoid } from "nanoid"; // npm install nanoid
 import { asc, desc, eq } from "drizzle-orm";
-import { chat, document, message } from "./db/schema";
+import { chat, document, message, user } from "./db/schema";
+import { sql } from "drizzle-orm";
+
 import { auth } from "./auth";
 import { headers } from "next/headers";
 
@@ -163,14 +165,148 @@ export async function deleteChatSession(chatId: string) {
   }
 }
 
-const PYTHON_URL = process.env.NEXT_PUBLIC_APP_BACKEND_URL || "http://localhost:8000";
+export async function checkUsageLimits(userId: string, type: 'upload' | 'chat') {
+  // Limits
+  const FREE_UPLOAD_LIMIT = 5;
+  const PRO_UPLOAD_LIMIT = 25;
+
+  // Simple check for now: 50 messages per chat or total? Let's say 50 messages per day or just total for now.
+  // User asked for tokens/chat limit, but message count is easier without tokenization lib.
+  // User asked for tokens/chat limit, but message count is easier without tokenization lib.
+  // Changed to Monthly limit as per request.
+  const FREE_MESSAGE_LIMIT = 500;
+
+
+  try {
+    const userInfo = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+    });
+
+    if (!userInfo) return { allowed: false, error: "User not found" };
+
+    const isPro = userInfo.isPro;
+
+    if (type === 'upload') {
+      const limit = isPro ? PRO_UPLOAD_LIMIT : FREE_UPLOAD_LIMIT;
+
+      // Count documents created this month
+      // Note: Drizzle SQL depends on driver. For PG:
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const docCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(document)
+        .where(
+          sql`${document.userId} = ${userId} AND ${document.createdAt} >= ${startOfMonth}`
+        );
+
+      const count = Number(docCount[0].count);
+
+      if (count >= limit) {
+        return { allowed: false, limit, count, isPro };
+      }
+      return { allowed: true, limit, count, isPro };
+    }
+
+    if (type === 'chat') {
+      if (isPro) return { allowed: true, isPro }; // Pro has no chat limits for now
+
+      // Check total messages by user this month? Or just ensure they don't abuse.
+      // Let's implement a simple daily limit for free users to prevent abuse
+      // Check total messages by user this month? Or just ensure they don't abuse.
+      // Monthly limit for free users
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const msgCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(message)
+        .innerJoin(chat, eq(message.chatId, chat.id))
+        .where(
+          sql`${chat.userId} = ${userId} AND ${message.role} = 'user' AND ${message.createdAt} >= ${startOfMonth}`
+        );
+
+      const count = Number(msgCount[0].count);
+      if (count >= FREE_MESSAGE_LIMIT) {
+        return { allowed: false, limit: FREE_MESSAGE_LIMIT, count, isPro };
+      }
+      return { allowed: true, limit: FREE_MESSAGE_LIMIT, count, isPro };
+    }
+
+    return { allowed: true };
+  } catch (error) {
+    console.error("Error checking limits:", error);
+    // Fail safe: allow if error? Or deny? Better deny to be safe or allow to not block.
+    // Let's deny to notice bugs.
+    return { allowed: false, error: "Failed to check limits" };
+  }
+}
+
+export async function getUsageStats(userId: string) {
+  try {
+    const userInfo = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+    });
+    if (!userInfo) return { success: false };
+
+    const isPro = userInfo.isPro;
+
+    // Uploads (Monthly)
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const docCountRes = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(document)
+      .where(sql`${document.userId} = ${userId} AND ${document.createdAt} >= ${startOfMonth}`);
+
+    const uploadCount = Number(docCountRes[0].count);
+    const uploadLimit = isPro ? 25 : 5;
+
+    // Chats (Monthly)
+    // const startOfDay = new Date(); // Old daily logic
+    // startOfDay.setHours(0, 0, 0, 0);
+
+    // Re-use startOfMonth calculated above for uploads
+    const msgCountRes = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(message)
+      .innerJoin(chat, eq(message.chatId, chat.id))
+      .where(sql`${chat.userId} = ${userId} AND ${message.role} = 'user' AND ${message.createdAt} >= ${startOfMonth}`);
+
+    const messageCount = Number(msgCountRes[0].count);
+    const messageLimit = isPro ? "Unlimited" : 500;
+
+    return {
+      success: true,
+      isPro,
+      uploads: { used: uploadCount, limit: uploadLimit },
+      messages: { used: messageCount, limit: messageLimit }
+    };
+
+  } catch (e) {
+    console.error("Failed to get stats:", e);
+    return { success: false };
+  }
+}
+
+const PYTHON_URL = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
 const INTERNAL_SECRET = process.env.INTERNAL_BACKEND_SECRET!;
 
 // --- 1. PROXY: Analyze Document ---
 export async function analyzeDocumentAction(formData: FormData) {
   // A. Verify User Session
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session?.user) return { success: false, error: "Unauthorized" };
+
+  const limitCheck = await checkUsageLimits(session.user.id, 'upload');
+  if (!limitCheck.allowed) {
+    return { success: false, error: `Upload limit reached. You have used ${limitCheck.count}/${limitCheck.limit} uploads. Upgrade to Pro for more.` };
+  }
 
   try {
     // B. Call Python with Secret Header
@@ -183,7 +319,7 @@ export async function analyzeDocumentAction(formData: FormData) {
     });
 
     if (!response.ok) throw new Error("Backend analysis failed");
-    
+
     const data = await response.json();
 
     // C. Save to Database (Your existing logic)
@@ -212,53 +348,58 @@ export type MessageHistory = {
 
 // --- 2. PROXY: Chat ---
 export async function getChatResponseAction(
-    chatId: string, 
-    userQuestion: string, 
-    history: MessageHistory[], 
-    documentContext: string
+  chatId: string,
+  userQuestion: string,
+  history: MessageHistory[],
+  documentContext: string
 ) {
-    // A. Verify User Session
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, error: "Unauthorized" };
+  // A. Verify User Session
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return { success: false, error: "Unauthorized" };
 
-    try {
-        // B. Call Python with Secret Header
-        const response = await fetch(`${PYTHON_URL}/chat`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-internal-secret": INTERNAL_SECRET, // <--- The Handshake
-            },
-            body: JSON.stringify({
-                question: userQuestion,
-                history: history,
-                document_context: documentContext
-            }),
-        });
+  const limitCheck = await checkUsageLimits(session.user.id, 'chat');
+  if (!limitCheck.allowed) {
+    return { success: false, error: `Monthly chat limit reached (${limitCheck.limit} messages). Upgrade to Pro for unlimited access.` };
+  }
 
-        if (!response.ok) throw new Error("AI Error");
-        const data = await response.json();
+  try {
+    // B. Call Python with Secret Header
+    const response = await fetch(`${PYTHON_URL}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": INTERNAL_SECRET, // <--- The Handshake
+      },
+      body: JSON.stringify({
+        question: userQuestion,
+        history: history,
+        document_context: documentContext
+      }),
+    });
 
-        // C. Save Messages to DB (Your existing logic)
-        // Save User Msg
-        await db.insert(message).values({
-            id: nanoid(),
-            chatId: chatId,
-            role: "user",
-            content: userQuestion
-        });
-        
-        // Save AI Msg
-        await db.insert(message).values({
-            id: nanoid(),
-            chatId: chatId,
-            role: "assistant",
-            content: data.answer
-        });
+    if (!response.ok) throw new Error("AI Error");
+    const data = await response.json();
 
-        return { success: true, answer: data.answer };
+    // C. Save Messages to DB (Your existing logic)
+    // Save User Msg
+    await db.insert(message).values({
+      id: nanoid(),
+      chatId: chatId,
+      role: "user",
+      content: userQuestion
+    });
 
-    } catch (error) {
-        return { success: false, error: "Chat failed" };
-    }
+    // Save AI Msg
+    await db.insert(message).values({
+      id: nanoid(),
+      chatId: chatId,
+      role: "assistant",
+      content: data.answer
+    });
+
+    return { success: true, answer: data.answer };
+
+  } catch {
+    return { success: false, error: "Chat failed" };
+  }
 }

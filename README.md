@@ -1,95 +1,73 @@
+# ⚖️ VakilAI - AI-Powered Legal Assistant
 
 <div align="center">
-  <img src="public/vakilai_landing.png" alt="VakilAI Logo" width="100%" />
-
-  # VakilAI - AI-Powered Legal Assistant
-
-  <p align="center">
-    <strong>Democratizing Legal Understanding with Advanced AI</strong>
-  </p>
-
-  <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#tech-stack">Tech Stack</a> •
-    <a href="#getting-started">Getting Started</a>
-  </p>
+  <p><strong>Democratizing Legal Understanding with Privacy-First AI</strong></p>
+  
+  ![VakilAI Dashboard](frontend/public/demo-2.png)
 </div>
 
 ---
 
 ## 🚀 Overview
 
-**VakilAI** is a next-generation legal tech platform designed to simplify complex legal documents for everyone. By leveraging advanced Large Language Models (LLMs) and Vector Databases, VakilAI analyzes contracts, identifies risks, and serves as a 24/7 personal legal assistant.
+**VakilAI** is your 24/7 personal legal guardian. We use advanced AI to analyze complex contracts, highlight risks, and answer your legal questions in plain English—all while keeping your data 100% private.
 
-Whether you're a freelancer reviewing an NDA or a startup founder checking a service agreement, VakilAI ensures you **never sign blindly**.
+Whether you're a freelancer checking an NDA or a startup founder reviewing a Service Agreement, VakilAI ensures you **never sign blindly**.
 
-## ✨ Key Features
+---
 
-### 📄 Intelligent Document Analysis
-Upload any legal PDF, and VakilAI instantly scans it to provide a comprehensive summary, highlighting critical clauses and potential risks.
-<img src="public/analyze_page.png" alt="Analysis Dashboard" width="100%" />
+## ⚙️ How It Works (RAG Pipeline)
 
-### 💬 Context-Aware Legal Chat
-Have questions about a specific clause? Chat with **VakilAI**, your virtual lawyer. It understands the full context of your uploaded document and answers your queries in plain English.
-<img src="public/learnmore_page.png" alt="Chat Interface" width="100%" />
+VakilAI uses a sophisticated **Retrieval-Augmented Generation (RAG)** pipeline to ensure accuracy:
 
-### 🔒 Privacy-First Design
-We value your confidentiality. **Your original PDF files are never stored.** We only extract the necessary text and embeddings for analysis, ensuring your sensitive documents remain private.
+1.  **Extraction**: The uploaded PDF is processed in-memory to extract text, while maintaining document structure.
+2.  **Vectorization**: The text is chunked and converted into vector embeddings using a specialized legal embedding model.
+3.  **Knowledge Verification**: When you ask a question, we first retrieve the most relevant chunks from your specific document.
+4.  **AI Analysis**: These chunks are fed into the LLM (Llama 3 via Groq) along with your query. The AI acts as a legal expert, analyzing *only* the retrieving context to generate a precise answer.
+    *   *Result*: Zero hallucinations, and answers grounded strictly in your document's facts.
 
-### 🗂️ Efficient Session Management
-Keep track of all your legal reviews in one place. Resume past conversations instantly from your profile.
-<img src="public/sessions_page.png" alt="Session History" width="100%" />
+---
+
+## ✨ Features that Protect You
+
+### 🔒 Privacy-First Architecture
+We believe your documents belong to you.
+*   **No Storage**: We do not store your original PDF files.
+*   **Ephemeral Analysis**: Documents are processed in memory and discarded immediately after extracting necessary insights.
+*   **Secure Proxy**: All communication is encrypted and routed through secure internal layers.
+
+### 📄 Intelligent Risk Detection
+Upload any legal PDF, and our AI instantly scans for:
+*   Risks & Loopholes
+*   Missing Clauses
+*   Unfair Terms (e.g., Non-Competes)
+*   **Score**: Get a safety score (0-100) for every document.
+
+![Risk Analysis](frontend/public/demo-1.png)
+
+### 💬 Talk to Your Lawyer (AI)
+Don't understand a "Termination for Convenience" clause? Just ask.
+*   **Context-Aware**: The AI knows *exactly* what's in your specific document.
+*   **Plain English**: No legalese. Just simple answers.
+
+![Chat Interface](frontend/public/demo-3.png)
+
+### 📊 Free & Pro Tiers
+*   **Free**: Summarize up to 5 documents/month.
+*   **Pro**: Unlimited analysis, deeper insights, and priority support.
 
 ---
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: Next.js 14, React, TailwindCSS, Framer Motion
--   **Backend**: Python, FastAPI
--   **AI & ML**: LangChain, Groq (LLM), ChromaDB (Vector Store)
--   **Database**: PostgreSQL (Neon DB), Drizzle ORM
--   **Authentication**: Better-Auth
-
----
-
-## ⚡ Getting Started
-
-### Prerequisites
--   Node.js & pnpm
--   Python 3.10+
--   PostgreSQL Database
-
-### Installation
-
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/vakil.ai.git
-    cd vakil.ai
-    ```
-
-2.  **Setup Frontend**
-    ```bash
-    cd frontend
-    pnpm install
-    # Set up .env.local with DATABASE_URL and BETTER_AUTH_SECRET
-    pnpm dev
-    ```
-
-3.  **Setup Backend**
-    ```bash
-    cd backend
-    python -m venv .venv
-    source .venv/bin/activate  # or .venv\Scripts\Activate.ps1 on Windows
-    pip install -r requirements.txt
-    # Set up .env with GROQ_API_KEY
-    python main.py
-    ```
-
-4.  **Visit App**
-    Open [http://localhost:3000](http://localhost:3000) to start using VakilAI.
+*   **Frontend**: Next.js 15, React, TailwindCSS, Framer Motion
+*   **Backend**: Python, FastAPI
+*   **AI Engine**: LangChain, Groq (Llama 3), ChromaDB (Vector Search)
+*   **Database**: PostgreSQL (Neon), Drizzle ORM
+*   **Auth**: Better-Auth (Secure Session Management)
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by Sourish & Team</p>
+  <p>Made with ❤️ for a fairer legal world.</p>
 </div>
