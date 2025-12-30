@@ -116,7 +116,24 @@ export default function Header() {
                                     onClick={() => setShowUserMenu(!showUserMenu)}
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                                 >
-                                    {session.user.image ? (
+                                    {(session.user as any).isPro ? (
+                                        <div className="relative">
+                                            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 opacity-75 blur-sm" />
+                                            {session.user.image ? (
+                                                <img
+                                                    src={session.user.image}
+                                                    alt={session.user.name || 'User'}
+                                                    className="relative w-8 h-8 rounded-full border-2 border-amber-400"
+                                                />
+                                            ) : (
+                                                <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center border-2 border-amber-400">
+                                                    <span className="text-white text-sm font-medium">
+                                                        {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : session.user.image ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={session.user.image}

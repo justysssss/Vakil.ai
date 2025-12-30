@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useSession, signOut } from '@/lib/auth-client';
 import { createChatSession, saveDocument, getChat, analyzeDocumentAction } from '@/lib/actions';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 // Define types for the Backend Response
 interface Risk {
@@ -78,6 +79,24 @@ function UploadPageContent() {
         loadSession();
     }, [urlChatId, analysisData]);
 
+    // Fetch Usage Stats
+    const [usageStats, setUsageStats] = React.useState<{
+        isPro: boolean;
+        uploads: { used: number; limit: number };
+        messages: { used: number; limit: number | string };
+    } | null>(null);
+
+    React.useEffect(() => {
+        if (session?.user?.id) {
+            import("@/lib/actions").then(async ({ getUsageStats }) => {
+                const stats = await getUsageStats(session.user.id);
+                if (stats.success) {
+                    setUsageStats(stats as any);
+                }
+            });
+        }
+    }, [session?.user?.id, analysisData]); // Re-fetch after analysis (upload count changes)
+
     // 2. Close dropdown when clicking outside
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -98,7 +117,7 @@ function UploadPageContent() {
     // 3. The Function to Call Backend
     const handleAnalyze = async () => {
         if (!session?.user) {
-            alert("Please sign in to analyze documents.");
+            toast.error("Please sign in to analyze documents.");
             return;
         }
         if (!file) return;
@@ -130,7 +149,7 @@ function UploadPageContent() {
             if (saveResult.success && saveResult.docId) {
                 // C. Create Chat Session
                 const chatResult = await createChatSession(session.user.id, saveResult.docId);
-                
+
                 if (chatResult.success && chatResult.chatId) {
                     setChatId(chatResult.chatId);
                 } else {
@@ -139,11 +158,14 @@ function UploadPageContent() {
                 }
             } else {
                 console.error("Failed to save document:", saveResult.error);
+                toast.error("Failed to save analysis results.");
             }
+
+            toast.success("Analysis complete!");
 
         } catch (error) {
             console.error(error);
-            alert("Error analyzing document. Please try again.");
+            toast.error(error instanceof Error ? error.message : "Error analyzing document. Please try again.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -204,7 +226,24 @@ function UploadPageContent() {
                                     onClick={() => setShowUserMenu(!showUserMenu)}
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                                 >
-                                    {session.user.image ? (
+                                    {(session.user as any).isPro ? (
+                                        <div className="relative">
+                                            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 opacity-75 blur-sm" />
+                                            {session.user.image ? (
+                                                <img
+                                                    src={session.user.image}
+                                                    alt={session.user.name || 'User'}
+                                                    className="relative w-8 h-8 rounded-full border-2 border-amber-400"
+                                                />
+                                            ) : (
+                                                <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center border-2 border-amber-400">
+                                                    <span className="text-white text-sm font-medium">
+                                                        {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : session.user.image ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={session.user.image}
@@ -305,11 +344,39 @@ function UploadPageContent() {
                     {/* Main content area */}
                     <div className={`${analysisData ? 'lg:col-span-5' : 'lg:col-span-9'} space-y-6 transition-all duration-500`}>
                         {!file ? (
-                            <Dropzone
-                                onFileSelect={setFile}
-                                accept={['application/pdf']}
-                                selectedFile={file}
-                            />
+                            <>
+                                {/* Usage Badge */}
+                                {usageStats && (
+                                    <div className="flex justify-center mb-6">
+                                        <div className={`
+                                            inline-flex items-center gap-3 px-4 py-2 rounded-full border backdrop-blur-md
+                                            ${usageStats.isPro
+                                                ? 'bg-violet-500/10 border-violet-500/20'
+                                                : 'bg-white/5 border-white/10'
+                                            }
+                                        `}>
+                                            <span className="text-sm text-white/50">Monthly Uploads:</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`font-semibold ${usageStats.uploads.used >= usageStats.uploads.limit ? 'text-red-400' : 'text-white'}`}>
+                                                    {usageStats.uploads.used}
+                                                </span>
+                                                <span className="text-white/30">/</span>
+                                                <span className="text-white/50">{usageStats.uploads.limit}</span>
+                                            </div>
+                                            {!usageStats.isPro && (
+                                                <Link href="/pricing" className="ml-2 text-xs text-violet-400 hover:text-violet-300 font-medium">
+                                                    Upgrade
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                <Dropzone
+                                    onFileSelect={setFile}
+                                    accept={['application/pdf']}
+                                    selectedFile={file}
+                                />
+                            </>
                         ) : (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                                 <UploadControls

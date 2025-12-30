@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
 import { getChatResponseAction, saveMessage, getChatMessages } from '@/lib/actions';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 // --- Types ---
 interface Message {
@@ -22,8 +23,8 @@ interface Risk {
 }
 
 type MessageHistory = {
-  role: "user" | "assistant";
-  content: string;
+    role: "user" | "assistant";
+    content: string;
 };
 
 interface ChatSidebarProps {
@@ -38,17 +39,23 @@ interface ChatSidebarProps {
     isExpanded?: boolean;
 }
 
-export default function ChatSidebar({ 
-    file, 
-    documentContext, 
-    chatId, 
-    analysisData, 
-    isExpanded = false 
+export default function ChatSidebar({
+    file,
+    documentContext,
+    chatId,
+    analysisData,
+    isExpanded = false
 }: ChatSidebarProps) {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [input, setInput] = React.useState('');
     const [isTyping, setIsTyping] = React.useState(false);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+    // Usage Stats for Chat
+    const [chatStats, setChatStats] = React.useState<{ used: number; limit: number | string } | null>(null);
+    // We might need to import useSession if not available, or pass userId prop
+    // Actually ChatSidebar is a client component, we can use useSession from auth-client if imported.
+    // Let's assume passed in or we fetch it. page.tsx has session. easiest is to self-fetch.
 
     // --- 1. Auto-scroll to bottom ---
     const scrollToBottom = () => {
@@ -94,7 +101,7 @@ export default function ChatSidebar({
         ];
 
         if (analysisData?.risks && analysisData.risks.length > 0) {
-            const riskSuggestions = analysisData.risks.slice(0, 2).map(risk => 
+            const riskSuggestions = analysisData.risks.slice(0, 2).map(risk =>
                 `Explain the risk: "${risk.clause.substring(0, 40)}..."`
             );
             return [...riskSuggestions, baseSuggestions[0]];
@@ -110,7 +117,7 @@ export default function ChatSidebar({
         if (!input.trim() || !file) return;
 
         if (!documentContext) {
-            alert("Please click 'Analyze Contract' first so I can read the document!");
+            toast.error("Please click 'Analyze Contract' first so I can read the document!");
             return;
         }
 
@@ -139,16 +146,22 @@ export default function ChatSidebar({
                 content: msg.content
             }));
 
-            const result = await getChatResponseAction(
-                chatId || "temp", // Fallback if ID missing, though UI usually prevents this
-                userMessage.content,
-                historyPayload,
-                documentContext
-            );
+            const response = await fetch("/api/proxy/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question: userMessage.content,
+                    history: historyPayload,
+                    document_context: documentContext
+                }),
+            });
 
-            if (!result.success) {
-                throw new Error(result.error || "Failed to get response");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to get response from proxy API");
             }
+
+            const result = await response.json(); // Parse the successful response
 
             // D. Add Assistant Message to UI
             const assistantMessage: Message = {
@@ -170,14 +183,36 @@ export default function ChatSidebar({
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "Sorry, I couldn't connect to VakilAI. Please try again later.",
+                content: "Sorry, I couldn't connect to VakilAI. Please check if the backend is running on localhost:8000.",
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, errorMessage]);
+            toast.error("Failed to connect to AI service. Please try again.");
         } finally {
             setIsTyping(false);
+            // Refresh stats
+            fetchStats();
         }
     };
+
+    // Helper to fetch stats
+    const fetchStats = async () => {
+        try {
+            const { getSession } = await import("@/lib/auth-client"); // Dynamic import to avoid issues? Or just standard import
+            const session = await getSession();
+            if (session?.data?.user?.id) {
+                const { getUsageStats } = await import("@/lib/actions");
+                const stats = await getUsageStats(session.data.user.id);
+                if (stats.success && stats.messages) {
+                    setChatStats(stats.messages as any);
+                }
+            }
+        } catch (e) { console.error(e) }
+    };
+
+    React.useEffect(() => {
+        fetchStats();
+    }, [chatId]); // Refetch on new chat load
 
     const handleSuggestionClick = (suggestion: string) => {
         if (documentContext) {
@@ -225,10 +260,10 @@ export default function ChatSidebar({
                     <div className="mt-3 flex items-center gap-2">
                         <div className={`
                             px-3 py-1.5 rounded-lg text-xs font-medium
-                            ${analysisData.score > 70 
-                                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                                : analysisData.score > 40 
-                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
+                            ${analysisData.score > 70
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                : analysisData.score > 40
+                                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                                     : 'bg-red-500/20 text-red-400 border border-red-500/30'
                             }
                         `}>
@@ -277,7 +312,7 @@ export default function ChatSidebar({
                                 {documentContext ? "Ready to help!" : "Analyzing..."}
                             </h4>
                             <p className="text-white/50 text-sm mt-2 max-w-[280px]">
-                                {documentContext 
+                                {documentContext
                                     ? `Ask me anything about "${file.name}". I've analyzed the document and found ${analysisData?.risks?.length || 0} potential risks.`
                                     : "Click 'Analyze Contract' to enable AI chat"
                                 }
@@ -334,19 +369,19 @@ export default function ChatSidebar({
                                 >
                                     <div className={`
                                         flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-                                        ${message.role === 'user' 
-                                            ? 'bg-violet-500/20' 
+                                        ${message.role === 'user'
+                                            ? 'bg-violet-500/20'
                                             : 'bg-gradient-to-br from-violet-500 to-purple-600'}
                                     `}>
-                                        {message.role === 'user' 
+                                        {message.role === 'user'
                                             ? <User className="w-4 h-4 text-violet-400" />
                                             : <Scale className="w-4 h-4 text-white" />
                                         }
                                     </div>
                                     <div className={`
                                         max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed
-                                        ${message.role === 'user' 
-                                            ? 'bg-violet-500/20 text-white rounded-tr-md' 
+                                        ${message.role === 'user'
+                                            ? 'bg-violet-500/20 text-white rounded-tr-md'
                                             : 'bg-white/10 text-white/90 rounded-tl-md'
                                         }
                                     `}>
@@ -406,6 +441,17 @@ export default function ChatSidebar({
                         <Send className="w-5 h-5" />
                     </button>
                 </form>
+
+                {/* Chat Limit Badge */}
+                {chatStats && (
+                    <div className="mt-3 flex items-center justify-between px-3 py-2 bg-white/5 rounded-lg border border-white/5">
+                        <span className="text-xs text-white/50">Monthly Limit:</span>
+                        <span className={`text-xs font-medium ${typeof chatStats.limit === 'number' && chatStats.used >= chatStats.limit ? 'text-red-400' : 'text-violet-300'
+                            }`}>
+                            {chatStats.used} / {chatStats.limit}
+                        </span>
+                    </div>
+                )}
             </div>
         </motion.aside>
     );
