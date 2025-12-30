@@ -231,11 +231,11 @@ const FloatingIconsHero = React.forwardRef<
           transition={{ duration: 0.6, delay: 0.6 }}
           className="mt-16 flex flex-wrap items-center justify-center gap-6 text-white/40 text-sm"
         >
-          <span>Trusted by 500+ businesses</span>
+          <span>Trained on Indian Contract Act</span>
           <span className="hidden sm:inline">•</span>
-          <span>₹2Cr+ risks identified</span>
+          <span>MSME Payment Guard</span>
           <span className="hidden sm:inline">•</span>
-          <span>MSME Compliant</span>
+          <span>Stamp Duty Analysis</span>
         </motion.div>
       </div>
     </section>
