@@ -9,9 +9,10 @@ interface UploadControlsProps {
     isAnalyzing: boolean; // <--- Controlled by parent (page.tsx)
     onAnalyze: () => void;
     onClear?: () => void;
+    disabled?: boolean;
 }
 
-export default function UploadControls({ file, isAnalyzing, onAnalyze, onClear }: UploadControlsProps) {
+export default function UploadControls({ file, isAnalyzing, onAnalyze, onClear, disabled }: UploadControlsProps) {
     if (!file) return null;
 
     return (
@@ -72,11 +73,13 @@ export default function UploadControls({ file, isAnalyzing, onAnalyze, onClear }
             {!isAnalyzing && (
                 <button
                     onClick={onAnalyze}
+                    disabled={disabled}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl 
                              bg-gradient-to-r from-violet-500 to-purple-600 
                              hover:from-violet-600 hover:to-purple-700
                              text-white font-semibold shadow-lg shadow-violet-500/25
-                             transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                             transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+                             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                     <Sparkles className="w-5 h-5" />
                     Analyze Contract

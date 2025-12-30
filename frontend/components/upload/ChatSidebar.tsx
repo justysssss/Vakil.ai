@@ -4,6 +4,7 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, User, FileText, Sparkles, AlertCircle, Scale, Loader2 } from 'lucide-react';
 import { saveMessage } from '@/lib/actions';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
     id: string;
@@ -44,6 +45,29 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
     React.useEffect(() => {
         scrollToBottom();
     }, [messages, isTyping]);
+
+    React.useEffect(() => {
+        const loadHistory = async () => {
+            if (chatId) {
+                try {
+                    const { getChatMessages } = await import("@/lib/actions");
+                    const result = await getChatMessages(chatId);
+                    if (result.success && result.messages) {
+                        const history: Message[] = result.messages.map(m => ({
+                            id: m.id,
+                            role: m.role as 'user' | 'assistant',
+                            content: m.content,
+                            timestamp: m.createdAt
+                        }));
+                        setMessages(history);
+                    }
+                } catch (e) {
+                    console.error("Failed to load chat history:", e);
+                }
+            }
+        };
+        loadHistory();
+    }, [chatId]);
 
     // Generate dynamic suggestions based on analysis
     const getDynamicSuggestions = (): string[] => {
@@ -304,7 +328,9 @@ export default function ChatSidebar({ file, documentContext, chatId, analysisDat
                                             : 'bg-white/10 text-white/90 rounded-tl-md'
                                         }
                                     `}>
-                                        <p className="whitespace-pre-wrap">{message.content}</p>
+                                        <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5">
+                                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}

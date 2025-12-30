@@ -10,7 +10,8 @@ import ChatSidebar from '@/components/upload/ChatSidebar';
 import { ArrowLeft, Scale, AlertTriangle, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useSession, signOut } from '@/lib/auth-client';
-import { createChatSession, saveDocument } from '@/lib/actions';
+import { createChatSession, saveDocument, getChat } from '@/lib/actions';
+import { useSearchParams } from 'next/navigation';
 
 // Define types for the Backend Response
 interface Risk {
@@ -28,6 +29,14 @@ interface AnalysisResult {
 }
 
 export default function UploadPage() {
+    return (
+        <React.Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">Loading...</div>}>
+            <UploadPageContent />
+        </React.Suspense>
+    );
+}
+
+function UploadPageContent() {
     const { data: session, isPending } = useSession();
     const [file, setFile] = React.useState<File | null>(null);
     const [isAnalyzing, setIsAnalyzing] = React.useState(false);
@@ -36,6 +45,37 @@ export default function UploadPage() {
     const userMenuRef = React.useRef<HTMLDivElement>(null);
     const [chatId, setChatId] = React.useState<string | null>(null);
 
+    const searchParams = useSearchParams();
+    const urlChatId = searchParams.get('chatId');
+
+    React.useEffect(() => {
+        const loadSession = async () => {
+            if (urlChatId && !analysisData) {
+                setIsAnalyzing(true);
+                try {
+                    const result = await getChat(urlChatId);
+                    if (result.success && result.chat && result.chat.document) {
+                        setChatId(result.chat.id);
+                        setAnalysisData(result.chat.document.analysis as AnalysisResult);
+
+                        // We create a dummy file object just to show the name in UI
+                        // The actual PDF content is missing, so PDF Viewer won't work perfectly
+                        // but Chat will work because we have context.
+                        const dummyFile = new File([""], result.chat.document.name, { type: "application/pdf" });
+                        setFile(dummyFile);
+                    } else {
+                        console.error("Failed to load chat:", result.error);
+                    }
+                } catch (e) {
+                    console.error("Error loading chat:", e);
+                } finally {
+                    setIsAnalyzing(false);
+                }
+            }
+        };
+
+        loadSession();
+    }, [urlChatId, analysisData]);
 
     // Close dropdown when clicking outside
     React.useEffect(() => {
@@ -56,9 +96,14 @@ export default function UploadPage() {
 
     // 1. The Function to Call Backend
     const handleAnalyze = async () => {
-        if (!file || !session?.user) return;
+        if (!session?.user) {
+            alert("Please sign in to analyze documents.");
+            return;
+        }
+        if (!file) return;
 
         setIsAnalyzing(true);
+        // ... rest of function
         const formData = new FormData();
         formData.append("file", file);
 
@@ -105,6 +150,8 @@ export default function UploadPage() {
         setFile(null);
         setAnalysisData(null);
         setChatId(null);
+        // Clear URL param if strictly needed, but Next.js router.replace is better.
+        // For now, simple state clear.
     };
 
     const handleLogout = async () => {
@@ -129,10 +176,10 @@ export default function UploadPage() {
                             <span className="text-sm">Back</span>
                         </Link>
                         <div className="h-6 w-px bg-white/10" />
-                        <div className="flex items-center gap-2">
+                        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                             <Scale className="w-5 h-5 text-violet-400" />
                             <span className="font-semibold text-white">VakilVerify</span>
-                        </div>
+                        </Link>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -156,11 +203,11 @@ export default function UploadPage() {
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                                 >
                                     {session.user.image ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={session.user.image}
                                             alt={session.user.name || 'User'}
                                             className="w-8 h-8 rounded-full border border-white/20"
-                                        // eslint-disable-next-line @next/next/no-img-element
                                         />
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -185,6 +232,14 @@ export default function UploadPage() {
                                                 {session.user.email}
                                             </p>
                                         </div>
+                                        {/* Added Profile Link */}
+                                        <Link
+                                            href="/profile"
+                                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                                        >
+                                            <Scale className="w-4 h-4 text-violet-400" /> {/* Reusing Scale icon or similar as per request */}
+                                            My Sessions
+                                        </Link>
                                         <button
                                             onClick={handleLogout}
                                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors"
@@ -230,7 +285,7 @@ export default function UploadPage() {
 
                                     <h4 className="text-sm font-medium text-white/50 uppercase tracking-wider mt-6 mb-3">Risks Found</h4>
 
-                                    {analysisData.risks.map((risk, idx) => (
+                                    {analysisData.risks && analysisData.risks.map((risk, idx) => (
                                         <div key={idx} className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors">
                                             <div className="flex items-start gap-3">
                                                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
@@ -262,8 +317,11 @@ export default function UploadPage() {
                                     isAnalyzing={isAnalyzing}
                                     onAnalyze={handleAnalyze}
                                     onClear={handleClear}
+                                    // Disable Analyze button if it's a dummy file from resumption
+                                    disabled={!file.size}
                                 />
                                 <div className={`mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-violet-500/10 transition-all duration-500 ${analysisData ? 'h-[750px]' : 'h-[600px]'}`}>
+                                    {/* Pass placeholder or different view if resuming without file content */}
                                     <PdfViewer file={file} risks={analysisData?.risks} />
                                 </div>
                             </motion.div>
