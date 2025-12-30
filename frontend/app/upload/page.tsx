@@ -10,7 +10,7 @@ import ChatSidebar from '@/components/upload/ChatSidebar';
 import { ArrowLeft, Scale, AlertTriangle, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useSession, signOut } from '@/lib/auth-client';
-import { createChatSession, saveDocument, getChat } from '@/lib/actions';
+import { createChatSession, saveDocument, getChat, analyzeDocumentAction } from '@/lib/actions';
 import { useSearchParams } from 'next/navigation';
 
 // Define types for the Backend Response
@@ -48,6 +48,7 @@ function UploadPageContent() {
     const searchParams = useSearchParams();
     const urlChatId = searchParams.get('chatId');
 
+    // 1. Load Session from URL if present
     React.useEffect(() => {
         const loadSession = async () => {
             if (urlChatId && !analysisData) {
@@ -59,8 +60,8 @@ function UploadPageContent() {
                         setAnalysisData(result.chat.document.analysis as AnalysisResult);
 
                         // We create a dummy file object just to show the name in UI
-                        // The actual PDF content is missing, so PDF Viewer won't work perfectly
-                        // but Chat will work because we have context.
+                        // The actual PDF content is missing in the browser, so PDF Viewer won't work perfectly
+                        // but Chat will work because we have context in DB/analysisData.
                         const dummyFile = new File([""], result.chat.document.name, { type: "application/pdf" });
                         setFile(dummyFile);
                     } else {
@@ -77,7 +78,7 @@ function UploadPageContent() {
         loadSession();
     }, [urlChatId, analysisData]);
 
-    // Close dropdown when clicking outside
+    // 2. Close dropdown when clicking outside
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -94,7 +95,7 @@ function UploadPageContent() {
         };
     }, [showUserMenu]);
 
-    // 1. The Function to Call Backend
+    // 3. The Function to Call Backend
     const handleAnalyze = async () => {
         if (!session?.user) {
             alert("Please sign in to analyze documents.");
@@ -103,44 +104,46 @@ function UploadPageContent() {
         if (!file) return;
 
         setIsAnalyzing(true);
-        // ... rest of function
         const formData = new FormData();
         formData.append("file", file);
 
         try {
-            // Replace with your actual backend URL
-            const response = await fetch(`${process.env.NEXT_PUBLIC_APP_BACKEND_URL}/analyze`, {
-                method: "POST",
-                body: formData,
-            });
-            const data = await response.json();
+            // A. Call AI Analysis (Python Backend via Server Action)
+            const result = await analyzeDocumentAction(formData);
+
+            if (!result.success || !result.data) {
+                throw new Error(result.error || "Analysis failed");
+            }
+
+            const data = result.data; // Extract data to avoid scope issues
             setAnalysisData(data);
 
-
+            // B. Save Analysis to Database
             const saveResult = await saveDocument(
                 session.user.id,
                 file.name,
-                data.full_text,
+                data.full_text, // Use the text returned from backend
                 data,
                 data.score || 0
-            )
+            );
+
             if (saveResult.success && saveResult.docId) {
+                // C. Create Chat Session
                 const chatResult = await createChatSession(session.user.id, saveResult.docId);
+                
                 if (chatResult.success && chatResult.chatId) {
                     setChatId(chatResult.chatId);
-                } else if (chatResult.success) {
-                    console.error("Chat session created successfully but chatId is missing.");
+                } else {
+                    console.warn("Chat session created but ID missing or failed", chatResult);
                     setChatId(null);
                 }
-            } else if (!saveResult.success) {
-                console.error(saveResult.error);
             } else {
-                console.error("Document saved successfully but docId is missing.");
+                console.error("Failed to save document:", saveResult.error);
             }
 
         } catch (error) {
             console.error(error);
-            alert("Error analyzing document. Check backend console.");
+            alert("Error analyzing document. Please try again.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -150,8 +153,7 @@ function UploadPageContent() {
         setFile(null);
         setAnalysisData(null);
         setChatId(null);
-        // Clear URL param if strictly needed, but Next.js router.replace is better.
-        // For now, simple state clear.
+        // Optional: clear URL params here using router.replace if desired
     };
 
     const handleLogout = async () => {
@@ -232,12 +234,11 @@ function UploadPageContent() {
                                                 {session.user.email}
                                             </p>
                                         </div>
-                                        {/* Added Profile Link */}
                                         <Link
                                             href="/profile"
                                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
                                         >
-                                            <Scale className="w-4 h-4 text-violet-400" /> {/* Reusing Scale icon or similar as per request */}
+                                            <Scale className="w-4 h-4 text-violet-400" />
                                             My Sessions
                                         </Link>
                                         <button
@@ -264,7 +265,6 @@ function UploadPageContent() {
 
             {/* Main content */}
             <main className="relative z-10 max-w-[1600px] mx-auto px-6 py-8">
-
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Left Sidebar: Switches between Tips and Analysis Results */}
                     <div className="lg:col-span-3 h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
@@ -317,11 +317,15 @@ function UploadPageContent() {
                                     isAnalyzing={isAnalyzing}
                                     onAnalyze={handleAnalyze}
                                     onClear={handleClear}
-                                    // Disable Analyze button if it's a dummy file from resumption
-                                    disabled={!file.size}
+                                    // Disable Analyze button if it's a dummy file (size 0) from history
+                                    // or if we are currently analyzing
+                                    disabled={!file.size || isAnalyzing}
                                 />
                                 <div className={`mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl shadow-violet-500/10 transition-all duration-500 ${analysisData ? 'h-[750px]' : 'h-[600px]'}`}>
-                                    {/* Pass placeholder or different view if resuming without file content */}
+                                    {/* Note: PdfViewer requires a real file blob URL to render the PDF.
+                                      If loading from history (dummy file), this might show a blank/error state 
+                                      unless PdfViewer handles file.size === 0 gracefully.
+                                    */}
                                     <PdfViewer file={file} risks={analysisData?.risks} />
                                 </div>
                             </motion.div>
