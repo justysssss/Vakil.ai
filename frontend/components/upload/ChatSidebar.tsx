@@ -66,7 +66,7 @@ export default function ChatSidebar({
                 try {
                     const result = await getChatMessages(chatId);
                     if (result.success && result.messages) {
-                        const history: Message[] = result.messages.map((m: any) => ({
+                        const history: Message[] = result.messages.map((m) => ({
                             id: m.id,
                             role: m.role as 'user' | 'assistant',
                             content: m.content,
